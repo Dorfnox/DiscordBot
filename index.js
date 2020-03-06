@@ -15,6 +15,8 @@ client.on('ready', () => {
     GatsMusic.join(client, musicChannelId);
 })
 
-client.on('message', msg => messageHandler.handleMessage(msg));
+client.on('message', msg => {
+    messageHandler.handleMessage(msg);
+});
 
 client.login(token);

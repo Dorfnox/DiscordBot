@@ -1,34 +1,33 @@
 const config = require('./discordBotConfig.json');
 const { GatsScraper } = require('./gatsScraper');
 const GatsMusic = require('./gatsMusic');
-const { prefix } = config.chat;
+const { prefixes } = config.chat;
 
 class MessageHandler {
     constructor(client) {
         this.client = client;
         this.commands = {
             'feed': {
-                position: 1,
                 execute: this.executeFeed,
                 description: 'give wfl waffles!',
             },
             'help': {
-                position: 2,
                 execute: this.executeHelp,
                 description: 'what commands does this bot have?',
             },
             'how': {
-                position: 3,
                 execute: this.executeHow,
                 description: 'try \'how old is kendron\' to find out Kendron\'s age!',
             },
             'play': {
-                position: 4,
                 execute: this.executePlay,
                 description: 'play a song by providing a description/youtube-link.',
             },
+            'stop': {
+                execute: this.executeStop,
+                description: 'stop the current song, and skips to the next song',
+            },
             'top5': {
-                position: 5,
                 execute: this.executeTopFive,
                 description: 'get the top five players from the gats leaderboard',
             }
@@ -37,11 +36,12 @@ class MessageHandler {
 
     handleMessage(msg) {
         const { content } = msg;
+        const args = content.trim().split(/\s+/);
+
         // Escape if not equal to the prefix
-        if (content.substr(0, prefix.length).toLowerCase() !== prefix) {
+        if (!prefixes.some(prefix => args[0].toLowerCase() === prefix)) {
             return;
         }
-        const args = content.trim().split(' ');
 
         // No second argument
         if (args.length === 1) {
@@ -74,12 +74,7 @@ class MessageHandler {
     executeHelp(msg) {
         const { commands } = this;
         const text = Object.keys(commands)
-            .map(cmd => { return {
-                position: commands[cmd].position,
-                description: `> **${cmd}**:\t ${commands[cmd].description}`
-            }})
-            .sort((a, b) => a.position > b.position)
-            .map(itm => itm.description)
+            .map(cmd => `> **${cmd}**:\t ${commands[cmd].description}`)
             .join('\n');
         msg.channel.send(text);
     }
@@ -92,6 +87,10 @@ class MessageHandler {
 
     executePlay(msg, args) {
         GatsMusic.play(this.client, msg, args);
+    }
+
+    executeStop(msg, args) {
+        GatsMusic.stop(this.client, msg);
     }
 
     executeTopFive(msg) {

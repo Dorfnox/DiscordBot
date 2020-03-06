@@ -1,4 +1,5 @@
 const ytdl = require('ytdl-core');
+const yts = require('yt-search');
 const { channelId: musicChannelId } = require('./discordBotConfig.json').music;
 
 function verifyRequest(msg) {
@@ -28,23 +29,33 @@ class GatsMusic {
         if (!isBotInMusicChannel(client)) {
             await this.join(client, musicChannelId);
         }
-        const ytLink = args[0];
-        if (!['youtube', 'youtu.be'].some(substring => ytLink.includes(substring))) {
-            return msg.reply('Please provide a youtube link');
+        if (!this.musicState.connection) {
+            console.log("No connection detected");
+            return ;
         }
-        const { connection } = this.musicState;
-        const dispatcher = connection.play(ytdl(ytLink, {
-            filter: 'audioonly',
-            quality: 'lowestaudio',
-        }))
-            .on('end', () => {
-                console.log('Music ended!');
-            })
-            .on('error', error => {
-                console.error(error);
-            });
-        // console.log('DISPATCHER', dispatcher);
-        dispatcher.setVolumeLogarithmic(0.7);
+
+        const ytLink = args[0];
+
+        // No argument
+        if (!ytLink || !args.join('')) {
+            msg.reply('Please provide a YouTube link or Text to play music, dumbass');
+
+        // Youtube link provided
+        } else if (['youtube', 'youtu.be'].some(substring => ytLink.includes(substring))) {
+            return this._playViaLink(msg, ytLink);
+
+        // String provided
+        } else {
+            return this._playViaString(msg, args);
+        }
+    }
+
+    stop(client, msg) {
+        if (!verifyRequest(msg)) return msg.reply('You need to be in the music channel to stop the music!');
+        if (!this.musicState.connection) {
+            return msg.reply('Bot must be in a music channel to stop music');
+        }
+        this.musicState.connection.dispatcher.end();
     }
 
     join(client, channelId) {
@@ -58,6 +69,52 @@ class GatsMusic {
             .catch(err => {
                 console.error(`channel ${channelId} does not exist`, err);
             });
+    }
+
+    _playViaLink(msg, ytLink)  {
+        const { connection } = this.musicState;
+        const dispatcher = connection
+            .play(
+                ytdl(ytLink, {
+                    filter: 'audioonly',
+                    quality: 250,
+                })
+                .on('info', info => {
+                    this._sendNowPlayingText(msg, info.player_response.videoDetails.title);
+                })
+            )
+            .on('end', () => {
+                console.log('Music ended!');
+                this.music
+            })
+            .on('error', error => {
+                console.error(error);
+            });
+        dispatcher.setVolumeLogarithmic(0.6);
+    }
+
+    _playViaString(msg, args) {
+        const options = {
+            query: args.join(' '),
+            pageStart: 1,
+            pageEnd: 1
+        }
+        yts(options, (err, r) => {
+            if ( err ) {
+                console.log("ERROR", err);
+                return ;
+            }
+            const { videos } = r;
+            this._playViaLink(msg, r.videos[0].url);
+        });
+    }
+
+    _sendNowPlayingText(msg, title) {
+        const emojis = [..."🎸🎹🎺🎻🎼🎷🥁🎧🎤"];
+        const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+        const str = `${emoji} *now playing* ~ ~ **${title}**`;
+        msg.channel.send(str);
+        console.log(`${Date.now()}: ${str}`);
     }
 }
 
