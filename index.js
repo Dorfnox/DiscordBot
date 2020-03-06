@@ -1,14 +1,20 @@
 const discord = require('discord.js');
-const { MessageHandler } = require('./messageHandler');
+const GatsMusic = require('./gatsMusic');
+const MessageHandler = require('./messageHandler');
+const config = require('./discordBotConfig.json');
+const { token } = config.init;
+const { channelId: musicChannelId } = config.music;
 
-const bot = new discord.Client();
+const client = new discord.Client();
+const messageHandler = new MessageHandler(client);
 
-const token = 'Njg0OTg1MDIxMDE4Mjc1ODk0.XmCJrg.Sz_ML0LCfpdy-0etivkk06Yc8Ss';
-
-bot.on('ready', () => {
+client.on('ready', () => {
     console.log('Bot has logged in.');
+    // client.channels.fetch('684985787221016599')
+    //     .then(ch => ch.send('wfl play thingy'));
+    GatsMusic.join(client, musicChannelId);
 })
 
-bot.on('message', MessageHandler.handleMessage);
+client.on('message', msg => messageHandler.handleMessage(msg));
 
-bot.login(token);
+client.login(token);
