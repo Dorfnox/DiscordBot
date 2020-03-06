@@ -61,8 +61,9 @@ class MessageHandler {
             return msg.reply(replies[Math.floor((Math.random() * replies.length))]);
         }
 
-        // Runs command
         const argsAfterCommand = args.slice(2).filter(arg => arg.length);
+
+        // Runs command
         cmds[cmd].execute.apply(this, [msg, argsAfterCommand]);
     }
 
