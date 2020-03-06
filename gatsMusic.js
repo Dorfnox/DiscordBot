@@ -32,15 +32,18 @@ class GatsMusic {
         if (!['youtube', 'youtu.be'].some(substring => ytLink.includes(substring))) {
             return msg.reply('Please provide a youtube link');
         }
-        console.log(this.musicState);
         const { connection } = this.musicState;
-        const dispatcher = connection.play(ytdl(ytLink))
+        const dispatcher = connection.play(ytdl(ytLink, {
+            filter: 'audioonly',
+            quality: 'lowestaudio',
+        }))
             .on('end', () => {
                 console.log('Music ended!');
             })
             .on('error', error => {
                 console.error(error);
             });
+        // console.log('DISPATCHER', dispatcher);
         dispatcher.setVolumeLogarithmic(0.7);
     }
 

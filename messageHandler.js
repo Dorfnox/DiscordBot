@@ -62,7 +62,7 @@ class MessageHandler {
         }
 
         // Runs command
-        const argsAfterCommand = args.slice(2).map(arg => arg.toLowerCase()).filter(arg => arg.length);
+        const argsAfterCommand = args.slice(2).filter(arg => arg.length);
         cmds[cmd].execute.apply(this, [msg, argsAfterCommand]);
     }
 
@@ -84,7 +84,7 @@ class MessageHandler {
     }
 
     executeHow(msg, args) {
-        if (args.join(' ').startsWith('old is ken')) {
+        if (args.join(' ').toLowerCase().startsWith('old is ken')) {
             msg.channel.send('Kendron is a baby boi!');
         }
     }
