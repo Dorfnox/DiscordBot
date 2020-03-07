@@ -78,52 +78,57 @@ class GatsMusic {
     }
 
     _playViaLink(msg, ytLink)  {
-        const { connection } = this.musicState;
-        const dispatcher = connection
-            .play(
-                ytdl(ytLink, {
-                    filter: 'audioonly',
-                    quality: 'highestaudio',
-                })
-                .on('info', info => {
-                    this._sendNowPlayingText(msg, info.player_response.videoDetails.title);
-                })
-            )
-            .on('finish', () => {
-                console.log('Music ended!');
+        if (!ytdl.validateURL(ytLink)) {
+            return msg.reply('Please provide a valid url, bruh.');
+        }
+
+        const promiseInfo = ytdl.getBasicInfo(ytLink);
+        const promiseDispatcher = new Promise((resolve, reject) => {
+            this.musicState.connection
+                .play(
+                    ytdl(ytLink, {
+                        filter: 'audioonly',
+                        quality: 'highestaudio',
+                    })
+                )
+                .on('start', () => resolve())
+                .on('finish', () => console.log(`song has ended.`))
+                .on('error', err => reject(err));
+        });
+
+        Promise.all([promiseInfo, promiseDispatcher])
+            .then(([ info ]) => {
+                this._sendNowPlayingText(msg, info.player_response.videoDetails.title);
             })
-            .on('error', err => {
-                console.error('youtube playing error: ', err);
+            .catch(err => {
+                console.error('[_playViaLink | promiseAll error] ', err);
+                msg.reply('An error occurred. Pleaes try again.');
             });
-        dispatcher.setVolumeLogarithmic(0.6);
     }
 
     _playViaString(msg, args) {
         const argString = args.join(' ');
-        const options = {
-            query: argString,
-            pageStart: 1,
-            pageEnd: 1
-        }
-        yts(options, (err, r) => {
-            if ( err ) {
+        const options = { query: argString, pageStart: 1, pageEnd: 1 };
+        yts(options)
+            .then(res => {
+                if ( !res.videos || !res.videos[0] ) {
+                    console.error('[_playViaString | video error result] ', res);
+                    return msg.reply(`Coulld not find any results for '${argString}'. Try editing your search.`);
+                }
+                return this._playViaLink(msg, res.videos[0].url);
+            })
+            .catch(err => {
                 console.error('[_playViaString | err] ', err);
-                return ;
-            } else if ( !r.videos || !r.videos[0] ) {
-                console.error('[_playViaString | video error result] ', r);
-                msg.reply(`Coulld not find '${argString}'. Please try again.`);
-                return;
-            }
-            this._playViaLink(msg, r.videos[0].url);
-        });
+                return msg.reply(`Failed to play '${argString}'. Please try the same command again.`)
+            });
     }
 
     _sendNowPlayingText(msg, title) {
         const emojis = [...'🎸🎹🎺🎻🎼🎷🥁🎧🎤'];
         const emoji = emojis[Math.floor(Math.random() * emojis.length)];
         const str = `${emoji} *now playing* ~ ~ **${title}**`;
-        msg.channel.send(str);
         console.log(`${Date.now()}: ${str}`);
+        return msg.channel.send(str);
     }
 }
 
