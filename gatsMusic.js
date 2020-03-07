@@ -84,13 +84,9 @@ class GatsMusic {
 
         const promiseInfo = ytdl.getBasicInfo(ytLink);
         const promiseDispatcher = new Promise((resolve, reject) => {
+            const readableStream = ytdl(ytLink, { filter: 'audioonly', quality: 'highestaudio' });
             this.musicState.connection
-                .play(
-                    ytdl(ytLink, {
-                        filter: 'audioonly',
-                        quality: 'highestaudio',
-                    })
-                )
+                .play(readableStream)
                 .on('start', () => resolve())
                 .on('finish', () => console.log(`song has ended.`))
                 .on('error', err => reject(err));
