@@ -1,2 +1,5 @@
 node_modules
 DiscordBotServer.pem
+nohup.out
+npm-debug.log
+package-lock.json
