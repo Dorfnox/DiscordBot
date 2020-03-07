@@ -23,6 +23,10 @@ class MessageHandler {
                 execute: this.executePlay,
                 description: 'play a song by providing a description/youtube-link.',
             },
+            'say': {
+                execute: this.executeSay,
+                description: 'I will repeat what you say :D',
+            },
             'stop': {
                 execute: this.executeStop,
                 description: 'stop the current song, and skips to the next song',
@@ -87,6 +91,11 @@ class MessageHandler {
 
     executePlay(msg, args) {
         GatsMusic.play(this.client, msg, args);
+    }
+
+    executeSay(msg, args) {
+        const text = !args.length ? 'Can\'t repeat what isn\'t said, you naughty, naughty person' : args.join(' ');
+        msg.channel.send(text);
     }
 
     executeStop(msg, args) {
