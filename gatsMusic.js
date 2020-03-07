@@ -27,6 +27,18 @@ class GatsMusic {
         this.musicQueue = new MusicQueue();
     }
 
+    getSimpleQueue(msg) {
+        if (this.musicQueue.isEmpty()) {
+            return [];
+        }
+        const queue = this.musicQueue.getQueue();
+        return queue.map(item => {
+            const { title, videoId } = item.info.player_response.videoDetails
+            const { author }  = item.msg;
+            return { title, videoId, author };
+        })
+    }
+
     async play(client, msg, args) {
         if (!verifyRequest(msg)) return msg.reply('You need to be in the music channel to do that!');
         if (!isBotInMusicChannel(client)) {

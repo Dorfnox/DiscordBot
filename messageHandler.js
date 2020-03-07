@@ -27,6 +27,10 @@ class MessageHandler {
                 execute: this.executePlay,
                 description: 'play a song by providing a description/youtube-link.',
             },
+            'queue': {
+                execute: this.executeQueue,
+                description: 'displays the current songs in the queue.',
+            },
             'say': {
                 execute: this.executeSay,
                 description: 'I will repeat what you say :D',
@@ -99,6 +103,22 @@ class MessageHandler {
 
     executePlay(msg, args) {
         GatsMusic.play(this.client, msg, args);
+    }
+
+    executeQueue(msg) {
+        const queue = GatsMusic.getSimpleQueue(msg);
+        let text;
+        if (!queue.length) {
+            text = '*There are no songs in the queue*';
+        } else {
+            text = queue.map((r, i, all) => {
+                if (i === 0) {
+                    return `***Now Playing***\n\`\`\`css\n${r.author.username} with ${r.title}\`\`\`${all.length > 1 ? '***Queue***' : ''}`;
+                }
+                return `> #${i} ~ ${r.author.username} with **${r.title}**`;
+            }).join('\n');
+        }
+        msg.channel.send(text);
     }
 
     executeSay(msg, args) {
