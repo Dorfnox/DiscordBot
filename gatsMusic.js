@@ -89,7 +89,7 @@ class GatsMusic {
                     this._sendNowPlayingText(msg, info.player_response.videoDetails.title);
                 })
             )
-            .on('end', () => {
+            .on('finish', () => {
                 console.log('Music ended!');
             })
             .on('error', err => {
@@ -114,7 +114,6 @@ class GatsMusic {
                 msg.reply(`Coulld not find '${argString}'. Please try again.`);
                 return;
             }
-            const { videos } = r;
             this._playViaLink(msg, r.videos[0].url);
         });
     }
