@@ -7,9 +7,20 @@ class MusicQueueItem {
 class MusicQueue {
     constructor() {
         this.songQueue = [];
+        this.songCountMap = new Map();
         this.maxQueueLength = 12;
         this.maxDuplicates = 2;
         this.maxPerUser = 3;
+        this.userSongCountMap = new Map();
+    }
+
+    canQueue(msg) {
+        // Queue has reached capacity
+        if (this.length() === this.maxQueueLength) {
+            msg.reply(`Queue is full. Maximum # of songs is ${thiss.maxQueueLength}`);
+            return false;
+        }
+        return true;
     }
 
     get() {
@@ -32,13 +43,11 @@ class MusicQueue {
         return !this.isEmpty() ? this.songQueue[0] : null;
     }
 
-    queue(itm) {
-        if (this.length() === this.maxQueueLength) return false;
+    queue(itm, msg) {
+        if (msg && !this.canQueue(msg)) return false;
         this.songQueue.push(itm);
         return true;
     }
 }
 
-module.exports = {
-    MusicQueue
-}
+module.exports = MusicQueue;

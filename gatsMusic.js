@@ -1,6 +1,7 @@
+const { channelId: musicChannelId } = require('./discordBotConfig.json').music;
 const ytdl = require('ytdl-core');
 const yts = require('yt-search');
-const { channelId: musicChannelId } = require('./discordBotConfig.json').music;
+const MusicQueue = require('./musicQueue');
 
 function verifyRequest(msg) {
     // we ignore it
@@ -22,7 +23,9 @@ function isBotInMusicChannel(client) {
 }
 
 class GatsMusic {
-    constructor() {}
+    constructor() {
+        this.musicQueue = new MusicQueue();
+    }
 
     async play(client, msg, args) {
         if (!verifyRequest(msg)) return msg.reply('You need to be in the music channel to do that!');
