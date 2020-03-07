@@ -51,11 +51,17 @@ class GatsMusic {
     }
 
     stop(client, msg) {
-        if (!verifyRequest(msg)) return msg.reply('You need to be in the music channel to stop the music!');
-        if (!this.musicState.connection) {
+        if (!verifyRequest(msg)) {
+            return msg.reply('You need to be in the music channel to stop the music!');
+        }
+        const { connection } = this.musicState;
+        if (!connection) {
             return msg.reply('Bot must be in a music channel to stop music');
         }
-        this.musicState.connection.dispatcher.end();
+        const { dispatcher } = connection;
+        if (dispatcher) {
+            dispatcher.end();
+        }
     }
 
     join(client, channelId) {
@@ -85,7 +91,6 @@ class GatsMusic {
             )
             .on('end', () => {
                 console.log('Music ended!');
-                this.music
             })
             .on('error', err => {
                 console.error("youtube playing error: ", err);
