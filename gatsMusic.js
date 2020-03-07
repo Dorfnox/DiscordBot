@@ -135,7 +135,7 @@ class GatsMusic {
             })
             .catch(err => {
                 console.error('[_playViaString | err] ', err);
-                return Promise.reject(`Failed to play '${argString}'. Please try the same command again.`);
+                return Promise.reject(`Failed to perfom find for '${argString}'. Please try again.`);
             });
     }
 
@@ -156,8 +156,15 @@ class GatsMusic {
                 }
             })
             .on('error', err => {
-                console.error('[_playViaLink | promiseAll error] ', err);
-                msg.reply(`'${title}' encountered an error... Please try again.`);
+                console.error('[_playRecursively | err] ', err);
+                msg.channel.send(`'${title}' encountered an error while streaming. skipping.`);
+                if (this.musicState.connection.dispatcher) {
+                    this.musicState.connection.dispatcher.end();
+                }
+                this.musicQueue.dequeue();
+                if (!this.musicQueue.isEmpty()) {
+                    this._playRecursively();
+                }
             });
     }
 
