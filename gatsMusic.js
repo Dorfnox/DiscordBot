@@ -77,7 +77,7 @@ class GatsMusic {
             .play(
                 ytdl(ytLink, {
                     filter: 'audioonly',
-                    quality: 250,
+                    quality: 251,
                 })
                 .on('info', info => {
                     this._sendNowPlayingText(msg, info.player_response.videoDetails.title);
