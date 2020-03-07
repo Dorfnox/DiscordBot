@@ -11,6 +11,7 @@
         ]
     },
     "music": {
-        "channelId": "685318597987663882"
+        "channelId": "685318597987663882",
+        "maxSongLength": 10
     }
 }

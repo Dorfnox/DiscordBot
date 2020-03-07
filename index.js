@@ -16,7 +16,10 @@ client.on('ready', () => {
 })
 
 client.on('message', msg => {
-    messageHandler.handleMessage(msg);
+    // Ignore all bots
+    if (!msg.author.bot) {
+        messageHandler.handleMessage(msg);
+    }
 });
 
 client.login(token);

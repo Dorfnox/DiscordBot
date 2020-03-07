@@ -87,8 +87,8 @@ class GatsMusic {
                 console.log('Music ended!');
                 this.music
             })
-            .on('error', error => {
-                console.error(error);
+            .on('error', err => {
+                console.error("youtube playing error: ", err);
             });
         dispatcher.setVolumeLogarithmic(0.6);
     }
@@ -101,7 +101,7 @@ class GatsMusic {
         }
         yts(options, (err, r) => {
             if ( err ) {
-                console.log("ERROR", err);
+                console.log("youtube SEARCH error: ", err);
                 return ;
             }
             const { videos } = r;
