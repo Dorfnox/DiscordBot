@@ -33,24 +33,47 @@ class GatsMusic {
             await this.join(client, musicChannelId);
         }
         if (!this.musicState.connection) {
-            console.log('No connection detected');
-            return ;
+            return console.log('No connection detected');
         }
 
         const ytLink = args[0];
 
         // No argument
         if (!ytLink || !args.join('')) {
-            msg.reply('Please provide a YouTube link or Text to play music, dumbass');
+            return msg.reply('Please provide a YouTube link, or text, to play music, dumbass');
+        }
 
         // Youtube link provided
-        } else if (['youtube', 'youtu.be'].some(substring => ytLink.includes(substring))) {
-            return this._playViaLink(msg, ytLink);
+        let infoPromise;
+        if (['youtube', 'youtu.be'].some(substring => ytLink.includes(substring))) {
+            infoPromise = this._getInfoViaLink(ytLink);
 
         // String provided
-        } else {
-            return this._playViaString(msg, args);
-        }
+        } else infoPromise = this._getInfoViaString(args);
+
+        infoPromise
+            .then(info => {
+                const queueItem = { info, msg }
+
+                // Validate queueability
+                if (this.musicQueue.canQueue(queueItem))  {
+
+                    // Queue song
+                    this.musicQueue.queue(queueItem);
+
+                    // Initiate recursive play
+                    if (this.musicQueue.length() === 1) {
+                        this._playRecursively();
+
+                    // Ping user that their song has been added to the queue
+                    } else this._sendNowQueuedText(msg, info.player_response.videoDetails.title);
+
+                }
+            })
+            .catch(err => {
+                console.error('[play | infoPromise error] ', err);
+                msg.reply(err);
+            });
     }
 
     stop(client, msg) {
@@ -80,52 +103,65 @@ class GatsMusic {
             });
     }
 
-    _playViaLink(msg, ytLink)  {
+    _getInfoViaLink(ytLink)  {
         if (!ytdl.validateURL(ytLink)) {
-            return msg.reply('Please provide a valid url, bruh.');
+            return Promise.reject(`Invalid url '${ytLink}'. Please provide me valid blueberries, bruh!`);
         }
-
-        const promiseInfo = ytdl.getBasicInfo(ytLink);
-        const promiseDispatcher = new Promise((resolve, reject) => {
-            const readableStream = ytdl(ytLink, { filter: 'audioonly', quality: 'highestaudio' });
-            this.musicState.connection
-                .play(readableStream)
-                .on('start', () => resolve())
-                .on('finish', () => console.log(`song has ended.`))
-                .on('error', err => reject(err));
-        });
-
-        Promise.all([promiseInfo, promiseDispatcher])
-            .then(([ info ]) => {
-                this._sendNowPlayingText(msg, info.player_response.videoDetails.title);
-            })
-            .catch(err => {
-                console.error('[_playViaLink | promiseAll error] ', err);
-                msg.reply('An error occurred. Pleaes try again.');
-            });
+        return ytdl.getBasicInfo(ytLink);
     }
 
-    _playViaString(msg, args) {
+    _getInfoViaString(args) {
         const argString = args.join(' ');
         const options = { query: argString, pageStart: 1, pageEnd: 1 };
-        yts(options)
+        return yts(options)
             .then(res => {
                 if ( !res.videos || !res.videos[0] ) {
                     console.error('[_playViaString | video error result] ', res);
-                    return msg.reply(`Coulld not find any results for '${argString}'. Try editing your search.`);
+                    return Promise.reject(`Coulld not find any results for '${argString}'. Try editing your search.`);
                 }
-                return this._playViaLink(msg, res.videos[0].url);
+                return this._getInfoViaLink(res.videos[0].url);
             })
             .catch(err => {
                 console.error('[_playViaString | err] ', err);
-                return msg.reply(`Failed to play '${argString}'. Please try the same command again.`)
+                return Promise.reject(`Failed to play '${argString}'. Please try the same command again.`);
             });
     }
 
-    _sendNowPlayingText(msg, title) {
+    _playRecursively() {
+        const { info, msg } = this.musicQueue.peek();
+        const { title, videoId } = info.player_response.videoDetails;
+        const ytLink = `https://www.youtube.com/watch?v=${videoId}`;
+
+        const readableStream = ytdl(ytLink, { filter: 'audioonly', quality: 'highestaudio' });
+        this.musicState.connection
+            .play(readableStream)
+            .on('start', () => this._sendNowPlayingText(msg, title))
+            .on('finish', () => {
+                console.log(`${Date.now()}: '${title}' has finished playing`);
+                this.musicQueue.dequeue();
+                if (!this.musicQueue.isEmpty()) {
+                    this._playRecursively();
+                }
+            })
+            .on('error', err => {
+                console.error('[_playViaLink | promiseAll error] ', err);
+                msg.reply(`'${title}' encountered an error... Please try again.`);
+            });
+    }
+
+    _randomMusicEmoji() {
         const emojis = [...'🎸🎹🎺🎻🎼🎷🥁🎧🎤'];
-        const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-        const str = `${emoji} *now playing* ~ ~ **${title}**`;
+        return emojis[Math.floor(Math.random() * emojis.length)];
+    }
+
+    _sendNowPlayingText(msg, title) {
+        const str = `${this._randomMusicEmoji()} *now playing* ~ ~ **${title}**`;
+        console.log(`${Date.now()}: ${str}`);
+        return msg.channel.send(str);
+    }
+
+    _sendNowQueuedText(msg, title) {
+        const str = `${this._randomMusicEmoji()} **${title}** has been queued in place #${this.musicQueue.length()}`;
         console.log(`${Date.now()}: ${str}`);
         return msg.channel.send(str);
     }

@@ -14,16 +14,24 @@ class MusicQueue {
         this.userSongCountMap = new Map();
     }
 
-    canQueue(msg) {
+    canQueue({ info, msg }) {
+        let errorMessage = null;
+
         // Queue has reached capacity
         if (this.length() === this.maxQueueLength) {
-            msg.reply(`Queue is full. Maximum # of songs is ${thiss.maxQueueLength}`);
+            errorMessage = `Queue is full. Maximum # of songs is ${this.maxQueueLength}`;
+        }
+
+        // Log / Send error
+        if (errorMessage) {
+            console.error(`[canQueue | error] `, errorMessage);
+            msg.reply(errorMessage);
             return false;
         }
         return true;
     }
 
-    get() {
+    getQueue() {
         return this.songQueue;
     }
 
@@ -43,10 +51,8 @@ class MusicQueue {
         return !this.isEmpty() ? this.songQueue[0] : null;
     }
 
-    queue(itm, msg) {
-        if (msg && !this.canQueue(msg)) return false;
-        this.songQueue.push(itm);
-        return true;
+    queue(queueItem) {
+        this.songQueue.push(queueItem);
     }
 }
 
