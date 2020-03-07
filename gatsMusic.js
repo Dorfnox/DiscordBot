@@ -30,7 +30,7 @@ class GatsMusic {
             await this.join(client, musicChannelId);
         }
         if (!this.musicState.connection) {
-            console.log("No connection detected");
+            console.log('No connection detected');
             return ;
         }
 
@@ -93,21 +93,26 @@ class GatsMusic {
                 console.log('Music ended!');
             })
             .on('error', err => {
-                console.error("youtube playing error: ", err);
+                console.error('youtube playing error: ', err);
             });
         dispatcher.setVolumeLogarithmic(0.6);
     }
 
     _playViaString(msg, args) {
+        const argString = args.join(' ');
         const options = {
-            query: args.join(' '),
+            query: argString,
             pageStart: 1,
             pageEnd: 1
         }
         yts(options, (err, r) => {
             if ( err ) {
-                console.log("youtube SEARCH error: ", err);
+                console.error('[_playViaString | err] ', err);
                 return ;
+            } else if ( !r.videos || !r.videos[0] ) {
+                console.error('[_playViaString | video error result] ', r);
+                msg.reply(`Coulld not find '${argString}'. Please try again.`);
+                return;
             }
             const { videos } = r;
             this._playViaLink(msg, r.videos[0].url);
@@ -115,7 +120,7 @@ class GatsMusic {
     }
 
     _sendNowPlayingText(msg, title) {
-        const emojis = [..."🎸🎹🎺🎻🎼🎷🥁🎧🎤"];
+        const emojis = [...'🎸🎹🎺🎻🎼🎷🥁🎧🎤'];
         const emoji = emojis[Math.floor(Math.random() * emojis.length)];
         const str = `${emoji} *now playing* ~ ~ **${title}**`;
         msg.channel.send(str);
