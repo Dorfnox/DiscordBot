@@ -6,6 +6,7 @@ const { prefixes } = config.chat;
 class MessageHandler {
     constructor(client) {
         this.client = client;
+        this.gatsMusic = new GatsMusic(client);
         this.commands = {
             'feed': {
                 execute: this.executeFeed,
@@ -19,13 +20,21 @@ class MessageHandler {
                 execute: this.executeHow,
                 description: 'try \'how old is kendron\' to find out Kendron\'s age!',
             },
+            'join': {
+                execute: this.executeJoin,
+                description: 'provide the name of a VOICE CHANNEL to join',
+            },
             'nani': {
                 execute: this.executeNani,
                 description: 'UwU',
             },
+            'pause': {
+                execute: this.executePause,
+                description: 'pause the current song',
+            },
             'play': {
                 execute: this.executePlay,
-                description: 'play a song by providing a description/youtube-link.',
+                description: 'play a song via description/youtube-link. Also unpauses.',
             },
             'queue': {
                 execute: this.executeQueue,
@@ -35,6 +44,10 @@ class MessageHandler {
                 execute: this.executeSay,
                 description: 'I will repeat what you say :D',
             },
+            'skip': {
+                execute: this.executeSkip,
+                description: 'stop the current song, and skips to the next song',
+            },
             'stop': {
                 execute: this.executeStop,
                 description: 'stop the current song, and skips to the next song',
@@ -42,18 +55,24 @@ class MessageHandler {
             'top5': {
                 execute: this.executeTopFive,
                 description: 'get the top five players from the gats leaderboard',
+            },
+            'unpause': {
+                execute: this.executeUnpause,
+                description: 'unpause the current song',
             }
         }
     }
 
     handleMessage(msg) {
-        const { content } = msg;
+        const { content, guild, author } = msg;
+
+        // Ignore anything not sent from a guild, no content, or if author is a bot
+        if (!guild || !content || !author || author.bot) return ;
+
         const args = content.trim().split(/\s+/);
 
         // Escape if not equal to the prefix
-        if (!prefixes.some(prefix => args[0].toLowerCase() === prefix)) {
-            return;
-        }
+        if (!prefixes.some(prefix => args[0].toLowerCase() === prefix)) return;
 
         // No second argument
         if (args.length === 1) {
@@ -69,7 +88,7 @@ class MessageHandler {
                 `${args.slice(1).join(' ')}, my ass!`,
                 'The fuck you expecting me to do?',
                 'I know what you did last summer.'
-            ]
+            ];
             return msg.reply(replies[Math.floor((Math.random() * replies.length))]);
         }
 
@@ -97,23 +116,62 @@ class MessageHandler {
         }
     }
 
+    executeJoin(msg, args) {
+        if (!args || !args[0]) {
+            return msg.reply('Please provide a voice channel name, dimwit');
+        }
+        const channelToJoin = args[0];
+        const validChannels = [];
+        // Find voice channel to join
+        msg.guild.channels.cache.forEach((channel, id) => {
+            if (channel.type === 'voice' && channel.name === channelToJoin) {
+                validChannels.push(channel);
+            }
+        });
+        if (!validChannels || !validChannels[0]) {
+            return msg.reply('Please provide an accurate voice channel name, dimwit');
+
+        }
+        const dispatcher = this.gatsMusic._getDispatcher();
+        if (dispatcher && dispatcher.paused) {
+            return msg.reply('Please Unpause me to join another channel (:waffle: unpause)');
+        }
+        validChannels[0].join()
+            .then(() => {
+                const text = `✅ ~ Successfully connected to channel '${channelToJoin}'!`;
+                console.log(text);
+                msg.channel.send(text);
+            })
+            .catch(err => {
+                const text = `🚫 ~ Failed to connect to channel '${channelToJoin}'`;
+                console.error(text, err);
+                msg.reply(text);
+            });
+    }
+
     executeNani(msg) {
         msg.channel.send("*Nani the fuck did you just fucking iimasu about watashi, you chiisai bitch desuka? Watashi'll have anata know that watashi graduated top of my class in Nihongo 3, and watashi've been involved in iroirona Nihongo tutoring sessions, and watashi have over sanbyaku perfect test scores. Watashi am trained in kanji, and watashi is the top letter writer in all of southern California. Anata are nothing to watashi but just another weeaboo. Watashi will korosu anata the fuck out with vocabulary the likes of which has neber meen mimasu'd before on this continent, mark watashino fucking words. Anata thinks that anata can get away with hanashimasing that kuso to watashi over the intaaneto? Omou again, fucker. As we hanashimasu, watashi am contacting watashino secret netto of otakus accross the USA, and anatano IP is being traced right now so you better junbishimasu for the ame, ujimushi. The ame that korosu's the pathetic chiisai thing anata calls anatano life. You're fucking shinimashita'd, akachan.*");
     }
 
+    executePause(msg) {
+        this.gatsMusic.pause(msg);
+    }
+
     executePlay(msg, args) {
-        GatsMusic.play(this.client, msg, args);
+        this.gatsMusic.play(msg, args);
     }
 
     executeQueue(msg) {
-        const queue = GatsMusic.getSimpleQueue(msg);
+        const queue = this.gatsMusic.getSimpleQueue();
         let text;
         if (!queue.length) {
             text = '*There are no songs in the queue*';
         } else {
+            const dispatcher = this.gatsMusic._getDispatcher();
+            const playText = (dispatcher && dispatcher.paused) ? '***Paused***' : '***Now Playing***';
             text = queue.map((r, i, all) => {
                 if (i === 0) {
-                    return `***Now Playing***\n\`\`\`css\n${r.author.username} with ${r.title}\`\`\`${all.length > 1 ? '***Queue***' : ''}`;
+                    return `${playText}\n\`\`\`css\n${r.author.username} with ${r.title}\`\`\`${all.length > 1 ? '***Queue***' : ''}`;
                 }
                 return `> #${i} ~ ${r.author.username} with **${r.title}**`;
             }).join('\n');
@@ -131,8 +189,12 @@ class MessageHandler {
         msg.channel.send(text);
     }
 
-    executeStop(msg, args) {
-        GatsMusic.stop(this.client, msg);
+    executeSkip(msg) {
+        this.gatsMusic.stop(msg);
+    }
+
+    executeStop(msg) {
+        this.gatsMusic.stop(msg);
     }
 
     executeTopFive(msg) {
@@ -142,6 +204,10 @@ class MessageHandler {
                 .join('\n');
             msg.channel.send(text);
         });
+    }
+
+    executeUnpause(msg) {
+        this.gatsMusic.unpause(msg);
     }
 }
 

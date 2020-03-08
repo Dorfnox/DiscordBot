@@ -3,31 +3,20 @@ const ytdl = require('ytdl-core');
 const yts = require('yt-search');
 const MusicQueue = require('./musicQueue');
 
-function verifyRequest(msg) {
-    // we ignore it
-    if (!msg.guild) return false;
-    try {
-        if (msg.member.voice.channel.id == musicChannelId) {
-            return true;
-        } else {
-            return false
-        }
-    } catch  {
-        console.error('member is not a part of a voice channel');
-        return false
-    }
-}
-
-function isBotInMusicChannel(client) {
-    return client.voice && client.voice.connections.first().channel.id == musicChannelId;
-}
-
 class GatsMusic {
-    constructor() {
+    constructor(client) {
         this.musicQueue = new MusicQueue();
+        this.client = client;
     }
 
-    getSimpleQueue(msg) {
+    forceStop(client) {
+        const dispatcher = this._getDispatcher();
+        if (dispatcher) {
+            dispatcher.end();
+        }
+    }
+
+    getSimpleQueue() {
         if (this.musicQueue.isEmpty()) {
             return [];
         }
@@ -39,19 +28,31 @@ class GatsMusic {
         })
     }
 
-    async play(client, msg, args) {
-        if (!verifyRequest(msg)) return msg.reply('You need to be in the music channel to do that!');
-        if (!isBotInMusicChannel(client)) {
-            await this.join(client, musicChannelId);
+    pause(msg) {
+        if (!this._verifyRequest(msg, 'pause')) return ;
+        if (this.getSimpleQueue().length === 0) {
+            return msg.channel.send('there are no songs to pause, silly.');
         }
-        if (!this.musicState.connection) {
-            return console.log('No connection detected');
-        }
+        const dispatcher = this._getDispatcher();
+        if (dispatcher && !dispatcher.paused) {
+            dispatcher.pause();
+            const { title } = this.musicQueue.peek().info.player_response.videoDetails;
+            msg.channel.send(`*paused ${title}*`)
 
+        } else msg.channel.send('Can\'t pause what\'s paused, genius');
+    }
+
+    play(msg, args) {
+        if (!this._verifyRequest(msg, 'play')) return ;
         const ytLink = args[0];
 
         // No argument
         if (!ytLink || !args.join('')) {
+            // check if there's a song to unpause
+            const dispatcher = this._getDispatcher();
+            if (dispatcher && dispatcher.paused) {
+                return dispatcher.resume();
+            }
             return msg.reply('Please provide a YouTube link, or text, to play music, dumbass');
         }
 
@@ -88,31 +89,27 @@ class GatsMusic {
             });
     }
 
-    stop(client, msg) {
-        if (!verifyRequest(msg)) {
-            return msg.reply('You need to be in the music channel to stop the music!');
-        }
-        const { connection } = this.musicState;
-        if (!connection) {
-            return msg.reply('Bot must be in a music channel to stop music');
-        }
-        const { dispatcher } = connection;
+    stop(msg) {
+        if (!this._verifyRequest(msg, 'stop')) return;
+        const dispatcher = this._getDispatcher();
         if (dispatcher) {
             dispatcher.end();
         }
     }
 
-    join(client, channelId) {
-        console.log(`Bot is joining a voice channel: ${channelId}`);
-        return client.channels.fetch(channelId)
-            .then(channel => channel.join())
-            .then(connection => {
-                this.musicState.connection = connection;
-                console.log(`connection to channel ${channelId} successful!`);
-            })
-            .catch(err => {
-                console.error(`channel ${channelId} does not exist`, err);
-            });
+    unpause(msg) {
+        if (!this._verifyRequest(msg, 'unpause')) return;
+        if (this.getSimpleQueue().length === 0) {
+            msg.channel.send('there are no songs to unpause, silly.');
+        } else {
+            const dispatcher = this._getDispatcher();
+            if (dispatcher && dispatcher.paused) {
+                dispatcher.resume();
+                const { title } = this.musicQueue.peek().info.player_response.videoDetails;
+                msg.channel.send(`*unpaused ${title}*`)
+            }
+            else msg.channel.send('Can\'t unpause what\'s not paused, genius.');
+        }
     }
 
     _getInfoViaLink(ytLink)  {
@@ -127,16 +124,31 @@ class GatsMusic {
         const options = { query: argString, pageStart: 1, pageEnd: 1 };
         return yts(options)
             .then(res => {
-                if ( !res.videos || !res.videos[0] ) {
+                const videos = res.videos || [];
+                const filteredVideos = videos.filter(video => {
+                    // Ignore Youtube Movies
+                    return video.author.id !== 'UClgRkhTL3_hImCAmdLfDE4g';
+                });
+                const video = filteredVideos[0];
+                if (!video) {
                     console.error('[_playViaString | video error result] ', res);
                     return Promise.reject(`Coulld not find any results for '${argString}'. Try editing your search.`);
                 }
-                return this._getInfoViaLink(res.videos[0].url);
+                return this._getInfoViaLink(video.url);
             })
             .catch(err => {
                 console.error('[_playViaString | err] ', err);
                 return Promise.reject(`Failed to perfom find for '${argString}'. Please try again.`);
             });
+    }
+
+    _getVoiceConnection() {
+        return !this.client.voice ? undefined : this.client.voice.connections.first();
+    }
+
+    _getDispatcher() {
+        const voiceConnection = this._getVoiceConnection();
+        return !voiceConnection ? undefined : voiceConnection.dispatcher;
     }
 
     _playRecursively() {
@@ -145,7 +157,9 @@ class GatsMusic {
         const ytLink = `https://www.youtube.com/watch?v=${videoId}`;
 
         const readableStream = ytdl(ytLink, { filter: 'audioonly', quality: 'highestaudio' });
-        this.musicState.connection
+        const connection = this._getVoiceConnection();
+        if (!connection) return ;
+        connection
             .play(readableStream)
             .on('start', () => this._sendNowPlayingText(msg, title))
             .on('finish', () => {
@@ -153,13 +167,17 @@ class GatsMusic {
                 this.musicQueue.dequeue();
                 if (!this.musicQueue.isEmpty()) {
                     this._playRecursively();
+                } else {
+                    const dispatcher = this._getDispatcher();
+                    if (dispatcher) dispatcher.end();
                 }
             })
             .on('error', err => {
                 console.error('[_playRecursively | err] ', err);
                 msg.channel.send(`'${title}' encountered an error while streaming. skipping.`);
-                if (this.musicState.connection.dispatcher) {
-                    this.musicState.connection.dispatcher.end();
+                const dispatcher = this._getDispatcher();
+                if (dispatcher) {
+                    dispatcher.end();
                 }
                 this.musicQueue.dequeue();
                 if (!this.musicQueue.isEmpty()) {
@@ -184,10 +202,22 @@ class GatsMusic {
         console.log(`${Date.now()}: ${str}`);
         return msg.channel.send(str);
     }
+
+    _verifyRequest(msg, cmd) {
+        // Client is not connected to a voice channel
+        const voiceConnection = this._getVoiceConnection();
+        if (!voiceConnection) {
+            msg.reply(`${cmd} cancelled - Have the bot join a music channel first by typing ':waffle: **join** ***nameOfVoiceChannel***'`);
+            return false;
+        }
+        const { id, name} = voiceConnection.channel;
+        // Member is not in the bot's voice channel
+        if (!msg.member.voice || msg.member.voice.channel.id !== id) {
+            msg.reply(`You need to be in the voice channel '${name}' to run ${cmd}!`);
+            return false;
+        }
+        return true;
+    }
 }
 
-GatsMusic.prototype.musicState = {
-    connection: null
-}
-
-module.exports = new GatsMusic();
+module.exports = GatsMusic;
