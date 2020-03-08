@@ -156,7 +156,7 @@ class GatsMusic {
         const { title, videoId } = info.player_response.videoDetails;
         const ytLink = `https://www.youtube.com/watch?v=${videoId}`;
 
-        const readableStream = ytdl(ytLink, { filter: 'audioonly', quality: 'highestaudio', highWaterMark: 1 << 22 });
+        const readableStream = ytdl(ytLink, { filter: 'audioonly', quality: 'lowestaudio', highWaterMark: 1 << 22 });
         const connection = this._getVoiceConnection();
         if (!connection) return ;
         connection
