@@ -212,8 +212,6 @@ class GatsMusic {
         }
         const { id, name } = voiceConnection.channel;
         // Member is not in the bot's voice channel
-        console.log("ID", id);
-        console.log("MEMBER", msg.member.voice.channel);
         if (!msg.member.voice || !msg.member.voice.channel || msg.member.voice.channel.id != id) {
             msg.reply(`You need to be in the voice channel '${name}' to run ${cmd}!`);
             return false;

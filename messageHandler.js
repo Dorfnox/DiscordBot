@@ -66,8 +66,15 @@ class MessageHandler {
     handleMessage(msg) {
         const { content, guild, author } = msg;
 
+        // Problem was logged here: https://github.com/discordjs/discord.js/issues/3910
         // Ignore anything not sent from a guild, no content, or if author is a bot
-        if (!guild || !content || !author || author.bot) return ;
+        // console.log("MESSAGE", msg);
+        // console.log("CONTENT", content);
+        // console.log("GUILD", guild);
+        // console.log("AUTHORR", author);
+        if (!guild || !content || !author || author.bot) {
+            return ;
+        }
 
         const args = content.trim().split(/\s+/);
 
