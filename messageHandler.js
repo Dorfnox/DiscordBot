@@ -13,7 +13,7 @@ class MessageHandler {
             },
             'help': {
                 execute: this.executeHelp,
-                description: 'what commands does this bot have?',
+                description: 'command waffle with waffle|wfl|w|:waffle: + *command*',
             },
             'how': {
                 execute: this.executeHow,
