@@ -1,9 +1,10 @@
 #!/bin/bash
 git pull
-sudo npm install
+npm update
+npm install
 if [ -z "$1" ]
 then
-	sudo xvfb-run -a node .
+	xvfb-run -a node .
 else
-	sudo nohup xvfb-run -a node . &
+	nohup xvfb-run -a node . &
 fi

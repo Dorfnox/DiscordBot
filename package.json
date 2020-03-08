@@ -15,6 +15,7 @@
     "ffmpeg": "0.0.4",
     "nightmare": "^3.0.2",
     "node-cache": "^5.1.0",
+    "node-gyp": "^6.1.0",
     "node-opus": "^0.3.3",
     "yt-search": "^1.1.2",
     "ytdl-core": "^2.0.0"
