@@ -1,6 +1,7 @@
 {
     "init": {
-        "token": "Njg0OTg1MDIxMDE4Mjc1ODk0.XmCJrg.Sz_ML0LCfpdy-0etivkk06Yc8Ss"
+        "token": "Njg0OTg1MDIxMDE4Mjc1ODk0.XmCJrg.Sz_ML0LCfpdy-0etivkk06Yc8Ss",
+        "testToken": "Njg2MzkyOTkyMTkzNDQ1ODk5.XmWkQA.Be0yVQlEWhJbH1CboaJapMkd1q4"
     },
     "chat": {
         "prefixes": [

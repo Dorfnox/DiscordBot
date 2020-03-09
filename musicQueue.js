@@ -39,6 +39,11 @@ class MusicQueue {
         return this.isEmpty() ? null : this.songQueue.shift();
     }
 
+    dequeueAt(idx) {
+        // If idx is > length of queue - 1, then remove last item
+        return this.isEmpty() ? null : this.songQueue.splice(Math.min(idx, this.songQueue.length - 1), 1);
+    }
+
     isEmpty() {
         return this.songQueue.length === 0;
     }

@@ -9,7 +9,7 @@ class GatsMusic {
         this.client = client;
     }
 
-    forceStop(client) {
+    forceStop() {
         const dispatcher = this._getDispatcher();
         if (dispatcher) {
             dispatcher.end();
@@ -89,11 +89,44 @@ class GatsMusic {
             });
     }
 
-    stop(msg) {
-        if (!this._verifyRequest(msg, 'stop')) return;
-        const dispatcher = this._getDispatcher();
-        if (dispatcher) {
-            dispatcher.end();
+    removeLast(msg) {
+        const { id } = msg.member;
+        let queuePosition = -1;
+        const queue = this.musicQueue.getQueue();
+        for (let i = queue.length - 1 ; i >= 0 ; i-- ) {
+            if (queue[i].msg.member.id == id) {
+                queuePosition = i;
+                break;
+            }
+        }
+
+        // Nothing in queue from member
+        if (queuePosition == -1) {
+            return msg.channel.send(`😕 You have nothing to be oopsy about.`);
+        }
+        return this.skip(msg, queuePosition);
+    }
+
+    skip(msg, queuePosition = 0) {
+        if (!this._verifyRequest(msg, 'skip')) return;
+        if (queuePosition > this.musicQueue.length() - 1) {
+            return msg.reply(`🚫 No songs in queue position #${queuePosition}`);
+        }
+        if (!this._verifyPermission(msg, queuePosition)) {
+            return msg.reply(`🚫 You don't have permission to do that.`);
+        }
+        // Remove from queue if queuePosition is specified
+        if (queuePosition > 0) {
+            const queueItem = this.musicQueue.dequeueAt(queuePosition)[0];
+            const { title } = queueItem.info.player_response.videoDetails;
+            return msg.channel.send(`🗑 removed '*${title}*' from queue`);
+
+        // End current song
+        } else {
+            const dispatcher = this._getDispatcher();
+            if (dispatcher) {
+                dispatcher.end();
+            }
         }
     }
 
@@ -201,6 +234,30 @@ class GatsMusic {
         const str = `${this._randomMusicEmoji()} **${title}** has been queued in place #${this.musicQueue.length()}`;
         console.log(`${Date.now()}: ${str}`);
         return msg.channel.send(str);
+    }
+
+    _verifyPermission(msg, songIndex) {
+        const { member } = msg;
+
+        // Admins and moderators have default full permission
+        if (member.hasPermission('KICK_MEMBERS')) {
+            return true;
+        }
+
+        const { id: requesterId } = this.musicQueue.getQueue()[songIndex].msg.member;
+
+        // User is the requester of the song
+        if (member.id == requesterId) {
+            return true;
+        }
+
+        // Original requester is no longer in the voice channel
+        if (!msg.member.voice.channel.members.has(requesterId)) {
+            return true;
+        }
+
+        // No!
+        return false;
     }
 
     _verifyRequest(msg, cmd) {
