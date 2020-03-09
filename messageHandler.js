@@ -12,6 +12,10 @@ class MessageHandler {
                 execute: this.executeFeed,
                 description: 'give wfl waffles!',
             },
+            'h': {
+                execute: this.executeHelp,
+                description: 'see *help*',
+            },
             'help': {
                 execute: this.executeHelp,
                 description: 'command waffle with waffle|wfl|w|:waffle: + *command*',
@@ -63,6 +67,10 @@ class MessageHandler {
             'skip': {
                 execute: this.executeSkip,
                 description: 'stops the current song, or removes from queue (eg: *skip 3*).',
+            },
+            'song': {
+                execute: this.executeSong,
+                description: 'Reveals the currently playing song as a youtube link.'
             },
             'stop': {
                 execute: this.executeSkip,
@@ -218,6 +226,15 @@ class MessageHandler {
 
     executeSkip(msg, args) {
         this.gatsMusic.skip(msg, Math.max(parseInt(args[0], 10) || 0, 0));
+    }
+
+    executeSong(msg) {
+        const queue = this.gatsMusic.getSimpleQueue();
+        if (queue.length == 0) {
+            return msg.channel.send('*Shhh... nothing to show here. Move along.*');
+        }
+        const { videoId, author } = queue[0];
+        return msg.channel.send(`**${author.username}** *with* https://www.youtube.com/watch?v=${videoId}\n`);
     }
 
     executeTopFive(msg) {

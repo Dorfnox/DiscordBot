@@ -109,6 +109,9 @@ class GatsMusic {
 
     skip(msg, queuePosition = 0) {
         if (!this._verifyRequest(msg, 'skip')) return;
+        if (this.musicQueue.length() == 0) {
+            return msg.channel.send(`*Nothing to see here... move along*`);
+        }
         if (queuePosition > this.musicQueue.length() - 1) {
             return msg.reply(`🚫 No songs in queue position #${queuePosition}`);
         }
@@ -189,7 +192,7 @@ class GatsMusic {
         const { title, videoId } = info.player_response.videoDetails;
         const ytLink = `https://www.youtube.com/watch?v=${videoId}`;
 
-        const readableStream = ytdl(ytLink, { filter: 'audioonly', quality: 'lowestaudio', highWaterMark: 1 << 22 });
+        const readableStream = ytdl(ytLink, { filter: 'audioonly', quality: 'lowestaudio', highWaterMark: 1 << 21 }); /* ~2mbs */
         const connection = this._getVoiceConnection();
         if (!connection) return ;
         connection
