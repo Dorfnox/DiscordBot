@@ -8,6 +8,7 @@ const messageHandler = new MessageHandler(client);
 
 client.on('ready', () => {
     console.log('Bot has logged in.');
+    client.user.setPresence({ activity: { name: '', type: ''}});
 })
 
 client.on('message', msg => messageHandler.handleMessage(msg));

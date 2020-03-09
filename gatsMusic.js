@@ -107,7 +107,7 @@ class GatsMusic {
         return this.skip(msg, queuePosition);
     }
 
-    skip(msg, queuePosition = 0) {
+    async skip(msg, queuePosition = 0) {
         if (!this._verifyRequest(msg, 'skip')) return;
         if (this.musicQueue.length() == 0) {
             return msg.channel.send(`*Nothing to see here... move along*`);
@@ -128,6 +128,7 @@ class GatsMusic {
         } else {
             const dispatcher = this._getDispatcher();
             if (dispatcher) {
+                if (dispatcher.paused) await dispatcher.resume();
                 dispatcher.end();
             }
         }
@@ -197,24 +198,21 @@ class GatsMusic {
         if (!connection) return ;
         connection
             .play(readableStream, { highWaterMark: 1 })
-            .on('start', () => this._sendNowPlayingText(msg, title))
+            .on('start', () => {
+                this.client.user.setPresence({ activity: { name: `${title} 🎧`, type: 'PLAYING', url: ytLink }});
+                this._sendNowPlayingText(msg, title);
+            })
             .on('finish', () => {
                 console.log(`${Date.now()}: '${title}' has finished playing`);
+                this.client.user.setPresence({ activity: { name: '', type: '' }});
                 this.musicQueue.dequeue();
                 if (!this.musicQueue.isEmpty()) {
                     this._playRecursively();
-                } else {
-                    const dispatcher = this._getDispatcher();
-                    if (dispatcher) dispatcher.end();
                 }
             })
             .on('error', err => {
                 console.error('[_playRecursively | err] ', err);
                 msg.channel.send(`'${title}' encountered an error while streaming. skipping.`);
-                const dispatcher = this._getDispatcher();
-                if (dispatcher) {
-                    dispatcher.end();
-                }
                 this.musicQueue.dequeue();
                 if (!this.musicQueue.isEmpty()) {
                     this._playRecursively();
