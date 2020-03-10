@@ -60,6 +60,10 @@ class MessageHandler {
                 execute: this.executeOops,
                 description: 'removes the last song you accidentally entered into the queue.'
             },
+            'salt': {
+                execute: this.executeSalt,
+                description: 'just why?',
+            },
             'say': {
                 execute: this.executeSay,
                 description: 'I will repeat what you say :D',
@@ -90,12 +94,6 @@ class MessageHandler {
     handleMessage(msg) {
         const { content, guild, author } = msg;
 
-        // Problem was logged here: https://github.com/discordjs/discord.js/issues/3910
-        // Ignore anything not sent from a guild, no content, or if author is a bot
-        // console.log("MESSAGE", msg);
-        // console.log("CONTENT", content);
-        // console.log("GUILD", guild);
-        // console.log("AUTHORR", author);
         if (!guild || !content || !author || author.bot) {
             return ;
         }
@@ -214,6 +212,25 @@ class MessageHandler {
         msg.channel.send(text);
     }
 
+    executeSalt(msg) {
+        const saltReplies = [
+            `WHY ARE YOU BEING SO SALTY`,
+            `https://www.youtube.com/watch?v=qDjPCMs7ivU`,
+            `https://www.youtube.com/watch?v=xzpndHtdl9A`,
+            `http://files.explosm.net/comics/Rob/soup.png`,
+            `https://www.amazon.com/Morton-Salt-Regular-26/dp/B0005ZV1CQ`,
+            `https://live.staticflickr.com/3953/15738368411_266702863c_b.jpg`,
+            `https://ih0.redbubble.net/image.500606301.2517/raf,750x1000,075,t,fafafa:ca443f4786.u1.jpg`,
+        ];
+        const saltIndex = Math.floor(Math.random() * saltReplies.length);
+        const saltReply = saltReplies[saltIndex];
+        if (saltIndex === 1 && this.gatsMusic.isInVoiceChannel()) {
+            this.gatsMusic.play(msg, [saltReply], { skipUserValidation: true });
+        } else {
+            msg.channel.send(saltReply);
+        }
+    }
+
     executeSay(msg, args) {
         let text;
         if (Math.random() > 0.14) {
@@ -239,9 +256,7 @@ class MessageHandler {
 
     executeTopFive(msg) {
         GatsScraper.getTopFive(topFive => {
-            const text = topFive
-                .map((p, idx) => `> **${p.position}**\t${p.player} ${p.points}`)
-                .join('\n');
+            const text = topFive.map(p => `> **${p.position}**\t${p.player} ${p.points}`).join('\n');
             msg.channel.send(text);
         });
     }

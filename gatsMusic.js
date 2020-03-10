@@ -9,13 +9,6 @@ class GatsMusic {
         this.client = client;
     }
 
-    forceStop() {
-        const dispatcher = this._getDispatcher();
-        if (dispatcher) {
-            dispatcher.end();
-        }
-    }
-
     getSimpleQueue() {
         if (this.musicQueue.isEmpty()) {
             return [];
@@ -26,6 +19,10 @@ class GatsMusic {
             const { author }  = item.msg;
             return { title, videoId, author };
         })
+    }
+
+    isInVoiceChannel() {
+        return this.client.voice && this.client.voice.connections.first();
     }
 
     pause(msg) {
@@ -42,8 +39,12 @@ class GatsMusic {
         } else msg.channel.send('Can\'t pause what\'s paused, genius');
     }
 
-    play(msg, args) {
-        if (!this._verifyRequest(msg, 'play')) return ;
+    play(msg, args, givenOptions = {}) {
+        const options = Object.assign({
+            skipUserValidation: false,
+        }, givenOptions);
+
+        if (!this._verifyRequest(msg, 'play', options)) return ;
         const ytLink = args[0];
 
         // No argument
@@ -107,7 +108,7 @@ class GatsMusic {
         return this.skip(msg, queuePosition);
     }
 
-    async skip(msg, queuePosition = 0) {
+    skip(msg, queuePosition = 0) {
         if (!this._verifyRequest(msg, 'skip')) return;
         if (this.musicQueue.length() == 0) {
             return msg.channel.send(`*Nothing to see here... move along*`);
@@ -125,13 +126,7 @@ class GatsMusic {
             return msg.channel.send(`🗑 removed '*${title}*' from queue`);
 
         // End current song
-        } else {
-            const dispatcher = this._getDispatcher();
-            if (dispatcher) {
-                if (dispatcher.paused) await dispatcher.resume();
-                dispatcher.end();
-            }
-        }
+        } else return this._endDispatcher();
     }
 
     unpause(msg) {
@@ -146,6 +141,19 @@ class GatsMusic {
                 msg.channel.send(`*unpaused ${title}*`)
             }
             else msg.channel.send('Can\'t unpause what\'s not paused, genius.');
+        }
+    }
+
+    async _endDispatcher() {
+        try {
+            const dispatcher = this._getDispatcher();
+            if (dispatcher) {
+                if (dispatcher.paused) await dispatcher.resume();
+                dispatcher.end();
+            }
+            return Promise.resolve();
+        } catch (err) {
+            return Promise.reject(err);
         }
     }
 
@@ -180,7 +188,7 @@ class GatsMusic {
     }
 
     _getVoiceConnection() {
-        return !this.client.voice ? undefined : this.client.voice.connections.first();
+        return this.isInVoiceChannel() ? this.client.voice.connections.first() : undefined;
     }
 
     _getDispatcher() {
@@ -232,7 +240,7 @@ class GatsMusic {
     }
 
     _sendNowQueuedText(msg, title) {
-        const str = `${this._randomMusicEmoji()} **${title}** has been queued in place #${this.musicQueue.length()}`;
+        const str = `${this._randomMusicEmoji()} **${title}** *has been queued in position* **#${this.musicQueue.length() - 1}**`;
         console.log(`${Date.now()}: ${str}`);
         return msg.channel.send(str);
     }
@@ -261,16 +269,21 @@ class GatsMusic {
         return false;
     }
 
-    _verifyRequest(msg, cmd) {
+    _verifyRequest(msg, cmd, givenOptions = {}) {
+        const options = Object.assign({
+            skipUserValidation: false
+        }, givenOptions);
+
         // Client is not connected to a voice channel
         const voiceConnection = this._getVoiceConnection();
         if (!voiceConnection) {
-            msg.reply(`${cmd} cancelled - Have the bot join a music channel first by typing ':waffle: **join** ***nameOfVoiceChannel***'`);
+            msg.reply(`can't '${cmd}' - Bot must be in a music channel... ':waffle: **join** ***nameOfVoiceChannel***'`);
             return false;
         }
         const { id, name } = voiceConnection.channel;
         // Member is not in the bot's voice channel
-        if (!msg.member.voice || !msg.member.voice.channel || msg.member.voice.channel.id != id) {
+        if (!options.skipUserValidation &&
+            (!msg.member.voice || !msg.member.voice.channel || msg.member.voice.channel.id != id)) {
             msg.reply(`You need to be in the voice channel '${name}' to run ${cmd}!`);
             return false;
         }
