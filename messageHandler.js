@@ -1,6 +1,7 @@
 const config = require('./discordBotConfig.json');
 const { GatsScraper } = require('./gatsScraper');
 const GatsMusic = require('./gatsMusic');
+const { getEmbeddedMessage } = require('./WaffleUtil'); 
 const { prefixes } = config.chat;
 
 class MessageHandler {
@@ -98,6 +99,8 @@ class MessageHandler {
             return ;
         }
 
+        // return msg.channel.send(getEmbeddedMessage());
+
         const args = content.trim().split(/\s+/);
 
         // Escape if not equal to the prefix
@@ -187,11 +190,25 @@ class MessageHandler {
     }
 
     executePause(msg) {
-        this.gatsMusic.pause(msg);
+        this.gatsMusic.pause(msg)
+            .then(res => {
+                console.log(res);
+                msg.channel.send(res.text)
+            })
+            .catch(err => {
+                msg.channel.send(err.text);
+            });
     }
 
     executePlay(msg, args) {
-        this.gatsMusic.play(msg, args);
+        this.gatsMusic.play(msg, args)
+            .then(res => {
+
+            })
+            .catch(err => {
+                const { text } = err;
+                
+            });
     }
 
     executeQueue(msg) {
@@ -214,6 +231,7 @@ class MessageHandler {
 
     executeSalt(msg) {
         const saltReplies = [
+            `:salt:`,
             `WHY ARE YOU BEING SO SALTY`,
             `https://www.youtube.com/watch?v=qDjPCMs7ivU`,
             `https://www.youtube.com/watch?v=xzpndHtdl9A`,
@@ -224,7 +242,7 @@ class MessageHandler {
         ];
         const saltIndex = Math.floor(Math.random() * saltReplies.length);
         const saltReply = saltReplies[saltIndex];
-        if (saltIndex === 1 && this.gatsMusic.isInVoiceChannel()) {
+        if (saltIndex === 2 && this.gatsMusic.isInVoiceChannel()) {
             this.gatsMusic.play(msg, [saltReply], { skipUserValidation: true });
         } else {
             msg.channel.send(saltReply);

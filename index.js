@@ -1,9 +1,9 @@
-const discord = require('discord.js');
+const Discord = require('discord.js');
 const MessageHandler = require('./messageHandler');
 const config = require('./discordBotConfig.json');
 const { token, testToken } = config.init;
 
-const client = new discord.Client();
+const client = new Discord.Client();
 const messageHandler = new MessageHandler(client);
 
 client.on('ready', () => {
@@ -14,5 +14,5 @@ client.on('ready', () => {
 client.on('message', msg => messageHandler.handleMessage(msg));
 
 // Initiate either regular client or test client
-client.login(token);
-// client.login(testToken);
+// client.login(token);
+client.login(testToken);

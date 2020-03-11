@@ -26,17 +26,13 @@ class GatsMusic {
     }
 
     pause(msg) {
-        if (!this._verifyRequest(msg, 'pause')) return ;
-        if (this.getSimpleQueue().length === 0) {
-            return msg.channel.send('there are no songs to pause, silly.');
-        }
-        const dispatcher = this._getDispatcher();
-        if (dispatcher && !dispatcher.paused) {
-            dispatcher.pause();
-            const { title } = this.musicQueue.peek().info.player_response.videoDetails;
-            msg.channel.send(`*paused ${title}*`)
-
-        } else msg.channel.send('Can\'t pause what\'s paused, genius');
+        return this._verifyRequest(msg)
+                .then(() => this._verifyQueueIsNotEmpty())
+                .then(() => this._pause())
+                .catch(err => {
+                    console.log(`[GatsMusic | pause] `, err);
+                    return err;
+                });
     }
 
     play(msg, args, givenOptions = {}) {
@@ -44,49 +40,53 @@ class GatsMusic {
             skipUserValidation: false,
         }, givenOptions);
 
-        if (!this._verifyRequest(msg, 'play', options)) return ;
-        const ytLink = args[0];
-
-        // No argument
-        if (!ytLink || !args.join('')) {
-            // check if there's a song to unpause
-            const dispatcher = this._getDispatcher();
-            if (dispatcher && dispatcher.paused) {
-                return dispatcher.resume();
-            }
-            return msg.reply('Please provide a YouTube link, or text, to play music, dumbass');
-        }
-
-        // Youtube link provided
-        let infoPromise;
-        if (['youtube', 'youtu.be'].some(substring => ytLink.includes(substring))) {
-            infoPromise = this._getInfoViaLink(ytLink);
-
-        // String provided
-        } else infoPromise = this._getInfoViaString(args);
-
-        infoPromise
-            .then(info => {
-                const queueItem = { info, msg }
-
-                // Validate queueability
-                if (this.musicQueue.canQueue(queueItem))  {
-
-                    // Queue song
-                    this.musicQueue.queue(queueItem);
-
-                    // Initiate recursive play
-                    if (this.musicQueue.length() === 1) {
-                        this._playRecursively();
-
-                    // Ping user that their song has been added to the queue
-                    } else this._sendNowQueuedText(msg, info.player_response.videoDetails.title);
-
+        return this._verifyRequest(msg, options)
+            .then(() => {
+                const ytLink = args[0];
+                // No argument provided
+                if (!ytLink || !args.join('')) {
+                    // check if there's a song to unpause
+                    const dispatcher = this._getDispatcher();
+                    if (dispatcher && dispatcher.paused) {
+                        dispatcher.resume();
+                        const title = this.musicQueue.peek().info.player_response.videoDetails;
+                        return Promise.resolve(`*unpaused ${title}*`);
+                    }
+                    return Promise.reject('*To play music, please provide a YouTube link or text*');
                 }
+
+                 // Youtube link provided
+                let infoPromise;
+                if (['youtube', 'youtu.be'].some(substring => ytLink.includes(substring))) {
+                    infoPromise = this._getInfoViaLink(ytLink);
+
+                // String provided
+                } else infoPromise = this._getInfoViaString(args);
+
+                return infoPromise
+                    .then(info => {
+                        const queueItem = { info, msg }
+
+                        // Validate queueability
+                        if (this.musicQueue.canQueue(queueItem))  {
+
+                            // Queue song
+                            this.musicQueue.queue(queueItem);
+
+                            // Initiate recursive play
+                            if (this.musicQueue.length() === 1) {
+                                this._playRecursively();
+
+                            // Ping user that their song has been added to the queue
+                            } else this._sendNowQueuedText(msg, info.player_response.videoDetails.title);
+
+                        }
+                    })
+                    .catch(err => err);
             })
             .catch(err => {
-                console.error('[play | infoPromise error] ', err);
-                msg.reply(err);
+                console.log(err);
+                return err;
             });
     }
 
@@ -103,45 +103,42 @@ class GatsMusic {
 
         // Nothing in queue from member
         if (queuePosition == -1) {
-            return msg.channel.send(`😕 You have nothing to be oopsy about.`);
+            return Promise.reject(`😕 You have nothing to be oopsy about.`);
         }
         return this.skip(msg, queuePosition);
     }
 
     skip(msg, queuePosition = 0) {
-        if (!this._verifyRequest(msg, 'skip')) return;
-        if (this.musicQueue.length() == 0) {
-            return msg.channel.send(`*Nothing to see here... move along*`);
-        }
-        if (queuePosition > this.musicQueue.length() - 1) {
-            return msg.reply(`🚫 No songs in queue position #${queuePosition}`);
-        }
-        if (!this._verifyPermission(msg, queuePosition)) {
-            return msg.reply(`🚫 You don't have permission to do that.`);
-        }
-        // Remove from queue if queuePosition is specified
-        if (queuePosition > 0) {
-            const queueItem = this.musicQueue.dequeueAt(queuePosition)[0];
-            const { title } = queueItem.info.player_response.videoDetails;
-            return msg.channel.send(`🗑 removed '*${title}*' from queue`);
+        return this._verifyRequest(msg)
+            .then(() => this._verifyQueueIsNotEmpty())
+            .then(() => {
+                // Verify there is a song at given queue position
+                if (queuePosition > this.musicQueue.length() - 1) {
+                    return Promise.reject(`🚫 No songs in queue position #${queuePosition}`);
+                }
+            })
+            .then(() => this._verifyPermission(msg, queuePosition))
+            .then(() => {
+                // Remove from queue if queuePosition is specified
+                if (queuePosition > 0) {
+                    const queueItem = this.musicQueue.dequeueAt(queuePosition);
+                    const { title } = queueItem.info.player_response.videoDetails;
+                    return msg.channel.send(`🗑 removed '*${title}*' from queue`);
 
-        // End current song
-        } else return this._endDispatcher();
+                // End current song
+                } else return this._endDispatcher();
+            })
+            .catch(err => err);
     }
 
     unpause(msg) {
-        if (!this._verifyRequest(msg, 'unpause')) return;
-        if (this.getSimpleQueue().length === 0) {
-            msg.channel.send('there are no songs to unpause, silly.');
-        } else {
-            const dispatcher = this._getDispatcher();
-            if (dispatcher && dispatcher.paused) {
-                dispatcher.resume();
-                const { title } = this.musicQueue.peek().info.player_response.videoDetails;
-                msg.channel.send(`*unpaused ${title}*`)
-            }
-            else msg.channel.send('Can\'t unpause what\'s not paused, genius.');
-        }
+        return this._verifyRequest(msg)
+            .then(() => this._verifyQueueIsNotEmpty())
+            .then(() => this._unpause())
+            .catch(err => {
+                console.log(err);
+                return err;
+            });
     }
 
     async _endDispatcher() {
@@ -151,7 +148,7 @@ class GatsMusic {
                 if (dispatcher.paused) await dispatcher.resume();
                 dispatcher.end();
             }
-            return Promise.resolve();
+            return Promise.resolve(`Song has been skipped`);
         } catch (err) {
             return Promise.reject(err);
         }
@@ -194,6 +191,22 @@ class GatsMusic {
     _getDispatcher() {
         const voiceConnection = this._getVoiceConnection();
         return !voiceConnection ? undefined : voiceConnection.dispatcher;
+    }
+
+    _pause() {
+        const dispatcher = this._getDispatcher();
+        return new Promise((resolve, reject) => {
+            console.log('hereeee');
+            if (dispatcher && !dispatcher.paused) {
+                console.log('hereeee');
+                dispatcher.pause();
+                const { title } = this.musicQueue.peek().info.player_response.videoDetails;
+                return resolve({ text: `*paused ${title}*` });
+    
+            } else {
+                reject({ text: 'Can\'t pause what\'s paused, genius' });
+            }
+        });
     }
 
     _playRecursively() {
@@ -245,49 +258,71 @@ class GatsMusic {
         return msg.channel.send(str);
     }
 
+    _unpause() {
+        const dispatcher = this._getDispatcher();
+        if (dispatcher && dispatcher.paused) {
+            dispatcher.resume();
+            const { title } = this.musicQueue.peek().info.player_response.videoDetails;
+            return Promise.resolve(`*unpaused ${title}*`);
+        }
+        return Promise.reject(`There's nothing to unpause, genius.`);
+    }
+
     _verifyPermission(msg, songIndex) {
         const { member } = msg;
+        const goodPermText = '*Good permissions*';
+        const badPermText = `🚫 *You don't have permission to do that*`;
 
         // Admins and moderators have default full permission
         if (member.hasPermission('KICK_MEMBERS')) {
-            return true;
+            return Promise.resolve(goodPermText);
         }
 
         const { id: requesterId } = this.musicQueue.getQueue()[songIndex].msg.member;
 
         // User is the requester of the song
         if (member.id == requesterId) {
-            return true;
+            return Promise.resolve(goodPermText);
         }
 
         // Original requester is no longer in the voice channel
         if (!msg.member.voice.channel.members.has(requesterId)) {
-            return true;
+            return Promise.resolve(goodPermText);
         }
 
         // No!
-        return false;
+        return Promise.reject(badPermText);
     }
 
-    _verifyRequest(msg, cmd, givenOptions = {}) {
-        const options = Object.assign({
-            skipUserValidation: false
-        }, givenOptions);
+    _verifyQueueIsNotEmpty() {
+        if (this.musicQueue.isEmpty()) {
+            return Promise.reject({ text: `*No songs are currently in the queue*` });
+        } else {
+            return Promise.resolve({ text: `*Queue contains songs*`});
+        }
+    }
 
-        // Client is not connected to a voice channel
-        const voiceConnection = this._getVoiceConnection();
-        if (!voiceConnection) {
-            msg.reply(`can't '${cmd}' - Bot must be in a music channel... ':waffle: **join** ***nameOfVoiceChannel***'`);
-            return false;
-        }
-        const { id, name } = voiceConnection.channel;
-        // Member is not in the bot's voice channel
-        if (!options.skipUserValidation &&
-            (!msg.member.voice || !msg.member.voice.channel || msg.member.voice.channel.id != id)) {
-            msg.reply(`You need to be in the voice channel '${name}' to run ${cmd}!`);
-            return false;
-        }
-        return true;
+    _verifyRequest(msg, options = {}) {
+        // Overwrite default options
+        return new Promise((resolve, reject) => {
+            const defaultOptions = {
+                skipUserValidation: false,
+            }
+            options = Object.assign(defaultOptions, options);
+
+            // Client is not connected to a voice channel
+            const voiceConnection = this._getVoiceConnection();
+            if (!voiceConnection) {
+                return reject({ text: `⚠️ Have waffle join a voice channel first: ':waffle: **join** ***myVoiceChannel***'`});
+            }
+            const { id, name } = voiceConnection.channel;
+            // Member is not in the bot's voice channel
+            if (!options.skipUserValidation &&
+                (!msg.member.voice || !msg.member.voice.channel || msg.member.voice.channel.id != id)) {
+                return reject({ text: `You must be in the voice channel '${name}' to do that!` });
+            }
+            return resolve({ text: 'verification good' });
+        });
     }
 }
 
