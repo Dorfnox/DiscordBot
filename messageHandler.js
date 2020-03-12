@@ -1,13 +1,13 @@
 const config = require('./discordBotConfig.json');
-const { GatsScraper } = require('./gatsScraper');
+const GatsScraper = require('./GatsScraper');
 const GatsMusic = require('./gatsMusic');
-const { getEmbeddedMessage } = require('./WaffleUtil'); 
 const { prefixes } = config.chat;
 
 class MessageHandler {
     constructor(client) {
         this.client = client;
         this.gatsMusic = new GatsMusic(client);
+        this.gatsScraper = new GatsScraper();
         this.commands = {
             'feed': {
                 execute: this.executeFeed,
@@ -186,29 +186,15 @@ class MessageHandler {
     }
 
     executeOops(msg) {
-        this.gatsMusic.removeLast(msg);
+        this.gatsMusic.removeLast(msg).then(wr => wr.reply(msg));
     }
 
     executePause(msg) {
-        this.gatsMusic.pause(msg)
-            .then(res => {
-                console.log(res);
-                msg.channel.send(res.text)
-            })
-            .catch(err => {
-                msg.channel.send(err.text);
-            });
+        this.gatsMusic.pause(msg).then(wr => wr.reply(msg));
     }
 
     executePlay(msg, args) {
-        this.gatsMusic.play(msg, args)
-            .then(res => {
-
-            })
-            .catch(err => {
-                const { text } = err;
-                
-            });
+        this.gatsMusic.play(msg, args).then(wr => wr.reply(msg));
     }
 
     executeQueue(msg) {
@@ -260,7 +246,7 @@ class MessageHandler {
     }
 
     executeSkip(msg, args) {
-        this.gatsMusic.skip(msg, Math.max(parseInt(args[0], 10) || 0, 0));
+        this.gatsMusic.skip(msg, Math.max(parseInt(args[0], 10) || 0, 0)).then(wr => wr.reply(msg));
     }
 
     executeSong(msg) {
@@ -273,14 +259,18 @@ class MessageHandler {
     }
 
     executeTopFive(msg) {
-        GatsScraper.getTopFive(topFive => {
-            const text = topFive.map(p => `> **${p.position}**\t${p.player} ${p.points}`).join('\n');
-            msg.channel.send(text);
-        });
+        this.gatsScraper.getTopFive()
+            .then(wr => {
+                const newResponse = wr.response.map(p => `> **${p.position}**\t${p.player} ${p.points}`).join('\n');
+                wr.setResponse(newResponse).reply(msg);
+            })
+            .catch(wr => {
+                wr.reply(msg);
+            });
     }
 
     executeUnpause(msg) {
-        this.gatsMusic.unpause(msg);
+        this.gatsMusic.unpause(msg).then(wr => wr.reply(msg));
     }
 }
 

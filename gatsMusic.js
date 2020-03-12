@@ -1,7 +1,9 @@
 const { channelId: musicChannelId } = require('./discordBotConfig.json').music;
 const ytdl = require('ytdl-core');
 const yts = require('yt-search');
-const MusicQueue = require('./musicQueue');
+const MusicQueue = require('./MusicQueue');
+const WaffleResponse = require('./WaffleResponse');
+const { randomMusicEmoji } = require('./WaffleUtil');
 
 class GatsMusic {
     constructor(client) {
@@ -26,161 +28,184 @@ class GatsMusic {
     }
 
     pause(msg) {
-        return this._verifyRequest(msg)
-                .then(() => this._verifyQueueIsNotEmpty())
-                .then(() => this._pause())
-                .catch(err => {
-                    console.log(`[GatsMusic | pause] `, err);
-                    return err;
-                });
+        return new Promise(resolve => {
+            let wr = this._verifyRequest(msg);
+            if (wr.isError) return resolve(wr);
+
+            wr = this._verifyQueueIsNotEmpty();
+            if (wr.isError) return resolve(wr);
+
+            return resolve(this._pause());
+        }).catch(err => {
+            return new WaffleResponse('⚠️ *unknown error occurred*').setErrorLocale('pause').setError(err).setIsSendable(false);
+        });
     }
 
-    play(msg, args, givenOptions = {}) {
-        const options = Object.assign({
-            skipUserValidation: false,
-        }, givenOptions);
+    play(msg, args, options = {}) {
+        return new Promise(resolve => {
+            options = Object.assign({
+                skipUserValidation: false,
+            }, options);
 
-        return this._verifyRequest(msg, options)
-            .then(() => {
-                const ytLink = args[0];
-                // No argument provided
-                if (!ytLink || !args.join('')) {
-                    // check if there's a song to unpause
-                    const dispatcher = this._getDispatcher();
-                    if (dispatcher && dispatcher.paused) {
-                        dispatcher.resume();
-                        const title = this.musicQueue.peek().info.player_response.videoDetails;
-                        return Promise.resolve(`*unpaused ${title}*`);
-                    }
-                    return Promise.reject('*To play music, please provide a YouTube link or text*');
+            let wr = this._verifyRequest(msg, options);
+            if (wr.isError) return resolve(wr);
+
+            const ytLink = args[0];
+            // No argument provided
+            if (!ytLink || !args.join('')) {
+                // check if there's a song to unpause
+                const dispatcher = this._getDispatcher();
+                if (dispatcher && dispatcher.paused) {
+                    dispatcher.resume();
+                    const { title } = this.musicQueue.peek().info.player_response.videoDetails;
+                    return resolve(wr.setResponse(`*unpaused ${title}*`));
                 }
+                return resolve(wr.setResponse('*To play music, please provide a YouTube link or text*').setIsError(true));
+            }
 
-                 // Youtube link provided
-                let infoPromise;
-                if (['youtube', 'youtu.be'].some(substring => ytLink.includes(substring))) {
-                    infoPromise = this._getInfoViaLink(ytLink);
+             // Youtube link provided
+             let infoPromise;
+             if (['youtube', 'youtu.be'].some(substring => ytLink.includes(substring))) {
+                 infoPromise = this._getInfoViaLink(ytLink);
 
-                // String provided
-                } else infoPromise = this._getInfoViaString(args);
+             // String provided
+             } else infoPromise = this._getInfoViaString(args);
 
-                return infoPromise
-                    .then(info => {
-                        const queueItem = { info, msg }
+             return infoPromise.then(wr => {
+                if (wr.isError) return resolve(wr);
 
-                        // Validate queueability
-                        if (this.musicQueue.canQueue(queueItem))  {
+                const info = wr.response;
+                const queueItem = { info, msg }
 
-                            // Queue song
-                            this.musicQueue.queue(queueItem);
+                // Validate queueability
+                wr = this.musicQueue.canQueue(queueItem);
+                if (wr.isError) return resolve(wr);
 
-                            // Initiate recursive play
-                            if (this.musicQueue.length() === 1) {
-                                this._playRecursively();
+                // Queue song
+                this.musicQueue.queue(queueItem);
 
-                            // Ping user that their song has been added to the queue
-                            } else this._sendNowQueuedText(msg, info.player_response.videoDetails.title);
-
-                        }
-                    })
-                    .catch(err => err);
-            })
-            .catch(err => {
-                console.log(err);
-                return err;
+                // Initiate recursive play
+                if (this.musicQueue.length() === 1) {
+                    this._playRecursively();
+                    return resolve(wr.setResponse('Initiated Recursive Play').setIsSendable(false));
+                // Else, Ping user that their song has been added to the queue
+                } else {
+                    const { title } = info.player_response.videoDetails;
+                    const queueText = `${randomMusicEmoji()} **${title}** *has been queued in position* **#${this.musicQueue.length() - 1}**`;
+                    return resolve(wr.setResponse(queueText));
+                }
             });
+        }).catch(err => {
+            return new WaffleResponse('⚠️ *unknown error occurred*').setErrorLocale('play').setError(err).setIsSendable(false);
+        });
     }
 
     removeLast(msg) {
-        const { id } = msg.member;
-        let queuePosition = -1;
-        const queue = this.musicQueue.getQueue();
-        for (let i = queue.length - 1 ; i >= 0 ; i-- ) {
-            if (queue[i].msg.member.id == id) {
-                queuePosition = i;
-                break;
+        const wr = new WaffleResponse();
+        return new Promise(resolve => {
+            const { id } = msg.member;
+            let queuePosition = -1;
+            const queue = this.musicQueue.getQueue();
+            for (let i = queue.length - 1 ; i >= 0 ; i-- ) {
+                if (queue[i].msg.member.id == id) {
+                    queuePosition = i;
+                    break;
+                }
             }
-        }
-
-        // Nothing in queue from member
-        if (queuePosition == -1) {
-            return Promise.reject(`😕 You have nothing to be oopsy about.`);
-        }
-        return this.skip(msg, queuePosition);
+            // Nothing in queue from member
+            if (queuePosition == -1) {
+                return resolve(wr.setResponse(`😕 You have nothing to be oopsy about.`));
+            }
+            return resolve(this.skip(msg, queuePosition));
+        })
+        .catch(err => {
+            return new WaffleResponse('⚠️ *unknown error - please try again').setErrorLocale('removeLast').setError(err).setIsSendable(false);
+        });
     }
 
     skip(msg, queuePosition = 0) {
-        return this._verifyRequest(msg)
-            .then(() => this._verifyQueueIsNotEmpty())
-            .then(() => {
-                // Verify there is a song at given queue position
-                if (queuePosition > this.musicQueue.length() - 1) {
-                    return Promise.reject(`🚫 No songs in queue position #${queuePosition}`);
-                }
-            })
-            .then(() => this._verifyPermission(msg, queuePosition))
-            .then(() => {
-                // Remove from queue if queuePosition is specified
-                if (queuePosition > 0) {
-                    const queueItem = this.musicQueue.dequeueAt(queuePosition);
-                    const { title } = queueItem.info.player_response.videoDetails;
-                    return msg.channel.send(`🗑 removed '*${title}*' from queue`);
+        return new Promise(resolve => {
+            let wr = this._verifyRequest(msg);
+            if (wr.isError) return resolve(wr);
 
-                // End current song
-                } else return this._endDispatcher();
-            })
-            .catch(err => err);
+            wr = this._verifyQueueIsNotEmpty();
+            if (wr.isError) return resolve(wr);
+
+            // Verify there is a song at given queue position
+            if (queuePosition > this.musicQueue.length() - 1) {
+                return resolve(wr.setResponse(`🚫 No songs in queue position **#${queuePosition}**`));
+            }
+
+            wr = this._verifyPermission(msg, queuePosition);
+            if (wr.isError) return resolve(wr);
+
+            // Remove from queue if queuePosition is specified
+            if (queuePosition > 0) {
+                const queueItem = this.musicQueue.dequeueAt(queuePosition);
+                const { title } = queueItem.info.player_response.videoDetails;
+                return resolve(wr.setResponse(`🗑 removed '*${title}*' from queue`));
+            }
+
+            // Otherwise, end current song
+            return this._endDispatcher().then(wr => resolve(wr.setIsSendable(false)));
+        })
+        .catch(err => {
+            return new WaffleResponse('⚠️ *unknown error - please try again').setErrorLocale('skip').setError(err).setIsSendable(false);
+        });
     }
 
     unpause(msg) {
-        return this._verifyRequest(msg)
-            .then(() => this._verifyQueueIsNotEmpty())
-            .then(() => this._unpause())
-            .catch(err => {
-                console.log(err);
-                return err;
-            });
+        return new Promise(resolve => {
+            let wr = this._verifyRequest(msg);
+            if (wr.isError) return resolve(wr);
+
+            wr = this._verifyQueueIsNotEmpty();
+            if (wr.isError) return resolve(wr);
+
+            return resolve(this._unpause());
+        })
+        .catch(err => {
+            return new WaffleResponse('⚠️ *unknown error - please try again').setErrorLocale('unpause').setError(err);
+        });
     }
 
     async _endDispatcher() {
-        try {
-            const dispatcher = this._getDispatcher();
-            if (dispatcher) {
-                if (dispatcher.paused) await dispatcher.resume();
-                dispatcher.end();
-            }
-            return Promise.resolve(`Song has been skipped`);
-        } catch (err) {
-            return Promise.reject(err);
+        const wr = new WaffleResponse();
+        const dispatcher = this._getDispatcher();
+        if (dispatcher) {
+            if (dispatcher.paused) await dispatcher.resume();
+            dispatcher.end();
         }
+        return wr;
     }
 
     _getInfoViaLink(ytLink)  {
+        const wr = new WaffleResponse();
         if (!ytdl.validateURL(ytLink)) {
-            return Promise.reject(`Invalid url '${ytLink}'. Please provide me valid blueberries, bruh!`);
+            return wr.setResponse(`Invalid url '${ytLink}'. Imma need some valid blueberries, bruh!`).setIsError(true);
         }
-        return ytdl.getBasicInfo(ytLink);
+        return ytdl.getBasicInfo(ytLink).then(response => wr.setResponse(response));
     }
 
     _getInfoViaString(args) {
         const argString = args.join(' ');
         const options = { query: argString, pageStart: 1, pageEnd: 1 };
+        const wr = new WaffleResponse();
         return yts(options)
             .then(res => {
                 const videos = res.videos || [];
                 const filteredVideos = videos.filter(video => {
-                    // Ignore Youtube Movies
+                    // Ignore Youtube Movies Hardcode
                     return video.author.id !== 'UClgRkhTL3_hImCAmdLfDE4g';
                 });
                 const video = filteredVideos[0];
                 if (!video) {
-                    console.error('[_playViaString | video error result] ', res);
-                    return Promise.reject(`Coulld not find any results for '${argString}'. Try editing your search.`);
+                    return wr.setResponse(`Coulld not find any results for '${argString}'. Try editing your search.`).setIsError(true);
                 }
                 return this._getInfoViaLink(video.url);
             })
             .catch(err => {
-                console.error('[_playViaString | err] ', err);
-                return Promise.reject(`Failed to perfom find for '${argString}'. Please try again.`);
+                return wr.setResponse(`Failed to perfom find for '${argString}'. Please try again.`).setError(err);
             });
     }
 
@@ -194,25 +219,21 @@ class GatsMusic {
     }
 
     _pause() {
+        const wr = new WaffleResponse();
         const dispatcher = this._getDispatcher();
-        return new Promise((resolve, reject) => {
-            console.log('hereeee');
-            if (dispatcher && !dispatcher.paused) {
-                console.log('hereeee');
-                dispatcher.pause();
-                const { title } = this.musicQueue.peek().info.player_response.videoDetails;
-                return resolve({ text: `*paused ${title}*` });
-    
-            } else {
-                reject({ text: 'Can\'t pause what\'s paused, genius' });
-            }
-        });
+        if (dispatcher && !dispatcher.paused) {
+            dispatcher.pause();
+            const { title } = this.musicQueue.peek().info.player_response.videoDetails;
+            return wr.setResponse(`*paused ${title}*`);
+        }
+        return wr.setResponse('Can\'t pause what\'s paused, genius').setIsError(true);
     }
 
     _playRecursively() {
         const { info, msg } = this.musicQueue.peek();
         const { title, videoId } = info.player_response.videoDetails;
         const ytLink = `https://www.youtube.com/watch?v=${videoId}`;
+        const wr = new WaffleResponse();
 
         const readableStream = ytdl(ytLink, { quality: 'highestaudio', highWaterMark: 1 << 21 }); /* ~2mbs */
         const connection = this._getVoiceConnection();
@@ -220,11 +241,11 @@ class GatsMusic {
         connection
             .play(readableStream, { highWaterMark: 1 })
             .on('start', () => {
+                wr.setResponse(`${randomMusicEmoji()} *now playing* ~ ~ **${title}**`).reply(msg);
                 this.client.user.setPresence({ activity: { name: `${title} 🎧`, type: 'PLAYING', url: ytLink }});
-                this._sendNowPlayingText(msg, title);
             })
             .on('finish', () => {
-                console.log(`${Date.now()}: '${title}' has finished playing`);
+                wr.setResponse(`**${title}** has finished playing`).setIsSendable(false).reply(msg);
                 this.client.user.setPresence({ activity: { name: '', type: '' }});
                 this.musicQueue.dequeue();
                 if (!this.musicQueue.isEmpty()) {
@@ -232,8 +253,7 @@ class GatsMusic {
                 }
             })
             .on('error', err => {
-                console.error('[_playRecursively | err] ', err);
-                msg.channel.send(`'${title}' encountered an error while streaming. skipping.`);
+                wr.setResponse(`'${title}' encountered an error while streaming. skipping.`).setError(err).reply(msg);
                 this.musicQueue.dequeue();
                 if (!this.musicQueue.isEmpty()) {
                     this._playRecursively();
@@ -241,88 +261,70 @@ class GatsMusic {
             });
     }
 
-    _randomMusicEmoji() {
-        const emojis = [...'🎸🎹🎺🎻🎼🎷🥁🎧🎤'];
-        return emojis[Math.floor(Math.random() * emojis.length)];
-    }
-
-    _sendNowPlayingText(msg, title) {
-        const str = `${this._randomMusicEmoji()} *now playing* ~ ~ **${title}**`;
-        console.log(`${Date.now()}: ${str}`);
-        return msg.channel.send(str);
-    }
-
-    _sendNowQueuedText(msg, title) {
-        const str = `${this._randomMusicEmoji()} **${title}** *has been queued in position* **#${this.musicQueue.length() - 1}**`;
-        console.log(`${Date.now()}: ${str}`);
-        return msg.channel.send(str);
-    }
-
     _unpause() {
+        const wr = new WaffleResponse();
         const dispatcher = this._getDispatcher();
         if (dispatcher && dispatcher.paused) {
             dispatcher.resume();
             const { title } = this.musicQueue.peek().info.player_response.videoDetails;
-            return Promise.resolve(`*unpaused ${title}*`);
+            return wr.setResponse(`*unpaused ${title}*`);
         }
-        return Promise.reject(`There's nothing to unpause, genius.`);
+        return wr.setResponse(`There's nothing to unpause, genius.`).setIsError(true);
     }
 
     _verifyPermission(msg, songIndex) {
         const { member } = msg;
-        const goodPermText = '*Good permissions*';
-        const badPermText = `🚫 *You don't have permission to do that*`;
+        const wr = new WaffleResponse();
 
         // Admins and moderators have default full permission
         if (member.hasPermission('KICK_MEMBERS')) {
-            return Promise.resolve(goodPermText);
+            return wr;
         }
 
         const { id: requesterId } = this.musicQueue.getQueue()[songIndex].msg.member;
 
         // User is the requester of the song
         if (member.id == requesterId) {
-            return Promise.resolve(goodPermText);
+            return wr;
         }
 
         // Original requester is no longer in the voice channel
         if (!msg.member.voice.channel.members.has(requesterId)) {
-            return Promise.resolve(goodPermText);
+            return wr;
         }
 
-        // No!
-        return Promise.reject(badPermText);
+        // Not allowed!
+        return wr.setResponse(`🚫 *You don't have permission to do that*`).setIsError(true);
     }
 
     _verifyQueueIsNotEmpty() {
+        const wr = new WaffleResponse();
         if (this.musicQueue.isEmpty()) {
-            return Promise.reject({ text: `*No songs are currently in the queue*` });
-        } else {
-            return Promise.resolve({ text: `*Queue contains songs*`});
+            return wr.setResponse(`*No songs are currently in the queue*`).setIsError(true);
         }
+        return wr;
     }
 
     _verifyRequest(msg, options = {}) {
         // Overwrite default options
-        return new Promise((resolve, reject) => {
-            const defaultOptions = {
-                skipUserValidation: false,
-            }
-            options = Object.assign(defaultOptions, options);
+        const defaultOptions = {
+            skipUserValidation: false,
+        }
+        options = Object.assign(defaultOptions, options);
+        const wr = new WaffleResponse();
 
-            // Client is not connected to a voice channel
-            const voiceConnection = this._getVoiceConnection();
-            if (!voiceConnection) {
-                return reject({ text: `⚠️ Have waffle join a voice channel first: ':waffle: **join** ***myVoiceChannel***'`});
-            }
-            const { id, name } = voiceConnection.channel;
-            // Member is not in the bot's voice channel
-            if (!options.skipUserValidation &&
-                (!msg.member.voice || !msg.member.voice.channel || msg.member.voice.channel.id != id)) {
-                return reject({ text: `You must be in the voice channel '${name}' to do that!` });
-            }
-            return resolve({ text: 'verification good' });
-        });
+        // Client is not connected to a voice channel
+        const voiceConnection = this._getVoiceConnection();
+        if (!voiceConnection) {
+            return wr.setResponse(`⚠️ Have waffle join a voice channel first: ':waffle: **join** ***myVoiceChannel***'`).setIsError(true);
+        }
+        const { id, name } = voiceConnection.channel;
+        // Member is not in the bot's voice channel
+        if (!options.skipUserValidation &&
+            (!msg.member.voice || !msg.member.voice.channel || msg.member.voice.channel.id != id)) {
+            return wr.setResponse(`⚠️ You must be in the voice channel '${name}' to do that!`).setIsError(true);
+        }
+        return wr;
     }
 }
 

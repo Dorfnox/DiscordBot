@@ -1,8 +1,4 @@
-class MusicQueueItem {
-    constructor(thing) {
-        this.thing = thing;
-    }
-}
+const WaffleResponse = require('./WaffleResponse');
 
 class MusicQueue {
     constructor() {
@@ -15,20 +11,17 @@ class MusicQueue {
     }
 
     canQueue({ info, msg }) {
-        let errorMessage = null;
+        const wr = new WaffleResponse();
 
         // Queue has reached capacity
         if (this.length() === this.maxQueueLength) {
-            errorMessage = `Queue is full. Maximum # of songs is ${this.maxQueueLength}`;
+            wr.setResponse(`Queue is full. Maximum # of songs is ${this.maxQueueLength}`).setErrorLocale('canQueue');
         }
+        return wr;
+    }
 
-        // Log / Send error
-        if (errorMessage) {
-            console.error(`[canQueue | error] `, errorMessage);
-            msg.reply(errorMessage);
-            return false;
-        }
-        return true;
+    getMaxQueueLength() {
+        return this.maxQueueLength;
     }
 
     getQueue() {
