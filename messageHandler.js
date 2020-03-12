@@ -261,8 +261,8 @@ class MessageHandler {
     executeTopFive(msg) {
         this.gatsScraper.getTopFive()
             .then(wr => {
-                const newResponse = wr.response.map(p => `> **${p.position}**\t${p.player} ${p.points}`).join('\n');
-                wr.setResponse(newResponse).reply(msg);
+                const fields = wr.response.map(p => { return { name: `**${p.points}**`, value: `#${p.position}   **${p.player}**` }});
+                wr.setEmbeddedResponse({ fields }).reply(msg);
             })
             .catch(wr => {
                 wr.reply(msg);

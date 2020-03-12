@@ -62,23 +62,21 @@ class WaffleResponse {
         //https://i.ytimg.com/vi/paZ2PaXdpGw/hqdefault.jpg
     }
 
-    reply(msg) {
-        setTimeout(() => {
-            const logger = this.isError ? console.error : console.log;
-            if (this.isLoggable) {
-                const username = msg && msg.member ? msg.member.user.username : 'unknownUser';
-                const errorLocale = this.errorLocale ? ` | ${this.errorLocale}` : '';
-                const error = this.error ? `\n_e_${this.error}` : '';
-                logger(`[${Date.now()} | ${username}${errorLocale}]\n_r_${this.response}${error}`);
+    async reply(msg) {
+        const logger = this.isError ? console.error : console.log;
+        if (this.isLoggable) {
+            const username = msg && msg.member ? msg.member.user.username : 'unknownUser';
+            const errorLocale = this.errorLocale ? ` | ${this.errorLocale}` : '';
+            const error = this.error ? `\n_e_${this.error}` : '';
+            logger(`[${Date.now()} | ${username}${errorLocale}]\n_r_${this.response}${error}`);
+        }
+        if (msg && this.isSendable && this.response) {
+            if (this.isDirectReply) {
+                await msg.reply(this.response);
             }
-            if (msg && this.isSendable && this.response) {
-                if (this.isDirectReply) {
-                    msg.reply(this.response);
-                }
-                else msg.channel.send(this.response);
-            }
-            return this;
-        }, 100);
+            else await msg.channel.send(this.response);
+        }
+        return this;
     }
 }
 
