@@ -12,6 +12,9 @@
         ]
     },
     "music": {
-        "maxSongLength": 10
+        "maxDuplicates": 2,
+        "maxQueueLength": 12,
+        "maxSongLength": 10,
+        "maxSongsPerUser": 4
     }
 }

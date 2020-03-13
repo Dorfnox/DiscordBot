@@ -167,7 +167,7 @@ class MessageHandler {
             }
         });
         if (!validChannels || !validChannels[0]) {
-            return msg.reply('Please provide an accurate voice channel name, dimwit');
+            return msg.reply('Please provide an accurate voice channel name');
 
         }
         const dispatcher = this.gatsMusic._getDispatcher();

@@ -9,10 +9,10 @@ const messageHandler = new MessageHandler(client);
 client.on('ready', () => {
     console.log('Bot has logged in.');
     client.user.setPresence({ activity: { name: '', type: ''}});
-})
+});
 
 client.on('message', msg => messageHandler.handleMessage(msg));
 
 // Initiate either regular client or test client
-client.login(token);
-// client.login(testToken);
+// client.login(token);
+client.login(testToken);

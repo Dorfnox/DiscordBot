@@ -1,22 +1,40 @@
 const WaffleResponse = require('./WaffleResponse');
+const config = require('./discordBotConfig');
 
 class MusicQueue {
     constructor() {
+        const { music } = config;
         this.songQueue = [];
-        this.songCountMap = new Map();
-        this.maxQueueLength = 12;
-        this.maxDuplicates = 2;
-        this.maxPerUser = 3;
-        this.userSongCountMap = new Map();
+        this.maxQueueLength = music.maxQueueLength;
+        this.maxSongLength = music.maxSongLength;
+        this.maxDuplicates = music.maxDuplicates;
+        this.maxDuplicatesMap = new Map();
+        this.maxSongsPerUser = music.maxSongsPerUser;
+        this.maxSongsPerUserMap = new Map();
     }
 
     canQueue({ info, msg }) {
         const wr = new WaffleResponse();
 
         // Queue has reached capacity
-        if (this.length() === this.maxQueueLength) {
-            wr.setResponse(`Queue is full. Maximum # of songs is ${this.maxQueueLength}`).setErrorLocale('canQueue');
+        if (this.length() - 1 === this.maxQueueLength) {
+            return wr.setResponse(`Queue Full! Maximum # of songs is ${this.maxQueueLength}`).setErrorLocale('canQueue');
         }
+
+        if (!msg.author) {
+            return wr.setResponse('Message requires a member').setErrorLocale('canQueue');
+        }
+
+        const { id: userId } = msg.author;
+        if (this.maxSongsPerUserMap.get(userId) === this.maxSongsPerUser) {
+            return wr.setResponse(`*You've reached ${this.maxSongsPerUser} songs. Let others use this feature too!*`).setErrorLocale('canQueue').setIsDirectReply(true);
+        }
+
+        const { videoId } = info.player_response.videoDetails;
+        if (this.maxDuplicatesMap.get(videoId) === this.maxDuplicates) {
+            return wr.setResponse(`*Can only queue the same song a max of ${this.maxDuplicates} times.*`).setErrorLocale('canQueue').setIsDirectReply(true);
+        }
+
         return wr;
     }
 
@@ -28,13 +46,35 @@ class MusicQueue {
         return this.songQueue;
     }
 
+    decrementMaxMap(map, id) {
+        const newCount = map.get(id) - 1;
+        if (newCount === 0) {
+            map.delete(id);
+        } else {
+            map.set(id, newCount);
+        }
+    }
+
     dequeue() {
-        return this.isEmpty() ? null : this.songQueue.shift();
+        return this.dequeueAt(0);
     }
 
     dequeueAt(idx) {
-        // If idx is > length of queue - 1, then remove last item
-        return this.isEmpty() ? null : this.songQueue.splice(Math.min(idx, this.songQueue.length - 1), 1)[0];
+        if (this.isEmpty()) {
+            return null;
+        }
+        // Normalize idx
+        idx = Math.max(0, Math.min(this.songQueue.length - 1, idx));
+
+        // Splice out song
+        const queueItem = this.songQueue.splice(idx, 1)[0];
+
+        // Decrement the maxSongsPerUser
+        this.decrementMaxMap(this.maxSongsPerUserMap, queueItem.msg.author.id);
+
+        // Decrement the maxDuplicates
+        this.decrementMaxMap(this.maxDuplicatesMap, queueItem.info.player_response.videoDetails.videoId);
+        return queueItem;
     }
 
     isEmpty() {
@@ -50,6 +90,17 @@ class MusicQueue {
     }
 
     queue(queueItem) {
+        const { info, msg } = queueItem;
+
+        const { id: userId } = msg.author;
+        const currentMaxSongs = this.maxSongsPerUserMap.get(userId) || 0;
+        this.maxSongsPerUserMap.set(userId, currentMaxSongs + 1);
+        console.log(currentMaxSongs);
+
+        const { videoId } = info.player_response.videoDetails;
+        const currentDuplicates = this.maxDuplicatesMap.get(videoId) || 0;
+        this.maxDuplicatesMap.set(videoId, currentDuplicates + 1);
+
         this.songQueue.push(queueItem);
     }
 }
