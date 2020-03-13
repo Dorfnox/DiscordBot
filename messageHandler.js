@@ -1,6 +1,7 @@
 const config = require('./discordBotConfig.json');
 const GatsScraper = require('./GatsScraper');
 const GatsMusic = require('./gatsMusic');
+const Pokemon = require('./Pokemon');
 const { prefixes } = config.chat;
 
 class MessageHandler {
@@ -8,6 +9,7 @@ class MessageHandler {
         this.client = client;
         this.gatsMusic = new GatsMusic(client);
         this.gatsScraper = new GatsScraper();
+        this.pokemon = new Pokemon();
         this.commands = {
             'feed': {
                 execute: this.executeFeed,
@@ -48,6 +50,10 @@ class MessageHandler {
             'play': {
                 execute: this.executePlay,
                 description: 'play a song via description/youtube-link. Also unpauses.',
+            },
+            'p!hint': {
+                execute: this.executePokeHint,
+                description: 'Run this before running p!hint for a little *more* help',
             },
             'q': {
                 execute: this.executeQueue,
@@ -195,6 +201,10 @@ class MessageHandler {
 
     executePlay(msg, args) {
         this.gatsMusic.play(msg, args).then(wr => wr.reply(msg));
+    }
+
+    executePokeHint(msg) {
+        this.pokemon.processNextPokeBotMessage(msg);
     }
 
     executeQueue(msg) {
