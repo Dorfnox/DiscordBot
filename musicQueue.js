@@ -1,5 +1,6 @@
 const WaffleResponse = require('./WaffleResponse');
 const config = require('./discordBotConfig');
+const { decrementMaxMap } = require('./WaffleUtil');
 
 class MusicQueue {
     constructor() {
@@ -18,11 +19,11 @@ class MusicQueue {
 
         // Queue has reached capacity
         if (this.length() - 1 === this.maxQueueLength) {
-            return wr.setResponse(`Queue Full! Maximum # of songs is ${this.maxQueueLength}`).setErrorLocale('canQueue');
+            return wr.setResponse(`Queue Full! Maximum # of songs is ${this.maxQueueLength}`).setErrorLocale('canQueue').setIsDirectReply(true);
         }
 
         if (!msg.author) {
-            return wr.setResponse('Message requires a member').setErrorLocale('canQueue');
+            return wr.setResponse('Message requires a member').setErrorLocale('canQueue').setIsSendable(false);
         }
 
         const { id: userId } = msg.author;
@@ -46,15 +47,6 @@ class MusicQueue {
         return this.songQueue;
     }
 
-    decrementMaxMap(map, id) {
-        const newCount = map.get(id) - 1;
-        if (newCount === 0) {
-            map.delete(id);
-        } else {
-            map.set(id, newCount);
-        }
-    }
-
     dequeue() {
         return this.dequeueAt(0);
     }
@@ -70,10 +62,10 @@ class MusicQueue {
         const queueItem = this.songQueue.splice(idx, 1)[0];
 
         // Decrement the maxSongsPerUser
-        this.decrementMaxMap(this.maxSongsPerUserMap, queueItem.msg.author.id);
+        decrementMaxMap(this.maxSongsPerUserMap, queueItem.msg.author.id);
 
         // Decrement the maxDuplicates
-        this.decrementMaxMap(this.maxDuplicatesMap, queueItem.info.player_response.videoDetails.videoId);
+        decrementMaxMap(this.maxDuplicatesMap, queueItem.info.player_response.videoDetails.videoId);
         return queueItem;
     }
 
@@ -90,18 +82,22 @@ class MusicQueue {
     }
 
     queue(queueItem) {
+        const wr = this.canQueue(queueItem);
+        if (wr.isError) {
+            return wr;
+        }
         const { info, msg } = queueItem;
 
         const { id: userId } = msg.author;
         const currentMaxSongs = this.maxSongsPerUserMap.get(userId) || 0;
         this.maxSongsPerUserMap.set(userId, currentMaxSongs + 1);
-        console.log(currentMaxSongs);
 
         const { videoId } = info.player_response.videoDetails;
         const currentDuplicates = this.maxDuplicatesMap.get(videoId) || 0;
         this.maxDuplicatesMap.set(videoId, currentDuplicates + 1);
 
         this.songQueue.push(queueItem);
+        return wr;
     }
 }
 

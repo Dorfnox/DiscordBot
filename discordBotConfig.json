@@ -13,8 +13,8 @@
     },
     "music": {
         "maxDuplicates": 2,
-        "maxQueueLength": 12,
+        "maxQueueLength": 15,
         "maxSongLength": 10,
-        "maxSongsPerUser": 4
+        "maxSongsPerUser": 6
     }
 }

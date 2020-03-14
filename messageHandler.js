@@ -65,7 +65,15 @@ class MessageHandler {
             },
             'oops': {
                 execute: this.executeOops,
-                description: 'removes the last song you accidentally entered into the queue.'
+                description: 'removes the last song you accidentally entered into the queue.',
+            },
+            'r': {
+                execute: this.executeRepeat,
+                description: 'see *repeat*',
+            },
+            'repeat': {
+                execute: this.executeRepeat,
+                description: 'Queues up the currently playing song to be played again',
             },
             'salt': {
                 execute: this.executeSalt,
@@ -223,6 +231,10 @@ class MessageHandler {
             }).join('\n');
         }
         msg.channel.send(text);
+    }
+
+    executeRepeat(msg) {
+        this.gatsMusic.repeat(msg).then(wr => wr.reply(msg));
     }
 
     executeSalt(msg) {

@@ -29,7 +29,7 @@ class GatsMusic {
 
     pause(msg) {
         return new Promise(resolve => {
-            let wr = this._verifyRequest(msg);
+            let wr = this._verifyInVoiceChannel(msg);
             if (wr.isError) return resolve(wr);
 
             wr = this._verifyQueueIsNotEmpty();
@@ -47,7 +47,7 @@ class GatsMusic {
                 skipUserValidation: false,
             }, options);
 
-            let wr = this._verifyRequest(msg, options);
+            let wr = this._verifyInVoiceChannel(msg, options);
             if (wr.isError) return resolve(wr);
 
             const ytLink = args[0];
@@ -71,30 +71,8 @@ class GatsMusic {
              // String provided
              } else infoPromise = this._getInfoViaString(args);
 
-             return infoPromise.then(wr => {
-                if (wr.isError) return resolve(wr);
-
-                const info = wr.response;
-                const queueItem = { info, msg }
-
-                // Validate queueability
-                wr = this.musicQueue.canQueue(queueItem);
-                if (wr.isError) return resolve(wr);
-
-                // Queue song
-                this.musicQueue.queue(queueItem);
-
-                // Initiate recursive play
-                if (this.musicQueue.length() === 1) {
-                    this._playRecursively();
-                    return resolve(wr.setResponse('Initiated Recursive Play').setIsSendable(false));
-                // Else, Ping user that their song has been added to the queue
-                } else {
-                    const { title } = info.player_response.videoDetails;
-                    const queueText = `${randomMusicEmoji()} **${title}** *has been queued in position* **#${this.musicQueue.length() - 1}**`;
-                    return resolve(wr.setResponse(queueText));
-                }
-            });
+             // Play music
+             return infoPromise.then(wr => resolve(wr.isError ? wr : this._play({ info: wr.response, msg })));
         }).catch(err => {
             return new WaffleResponse('⚠️ *unknown error occurred*').setErrorLocale('play').setError(err).setIsSendable(false);
         });
@@ -123,9 +101,24 @@ class GatsMusic {
         });
     }
 
+    repeat(msg) {
+        return new Promise(resolve => {
+            let wr = this._verifyInVoiceChannel(msg);
+            if (wr.isError) return resolve(wr);
+
+            wr = this._verifyQueueIsNotEmpty();
+            if (wr.isError) return resolve(wr);
+
+            const { info } = this.musicQueue.peek();
+            return resolve(this._play({ info, msg }));
+        }).catch(err => {
+            return new WaffleResponse('⚠️ *unknown error - please try again').setErrorLocale('repeat').setError(err).setIsSendable(false);
+        });
+    }
+
     skip(msg, queuePosition = 0) {
         return new Promise(resolve => {
-            let wr = this._verifyRequest(msg);
+            let wr = this._verifyInVoiceChannel(msg);
             if (wr.isError) return resolve(wr);
 
             wr = this._verifyQueueIsNotEmpty();
@@ -136,7 +129,7 @@ class GatsMusic {
                 return resolve(wr.setResponse(`🚫 No songs in queue position **#${queuePosition}**`));
             }
 
-            wr = this._verifyPermission(msg, queuePosition);
+            wr = this._verifySongSkipPermission(msg, queuePosition);
             if (wr.isError) return resolve(wr);
 
             // Remove from queue if queuePosition is specified
@@ -156,7 +149,7 @@ class GatsMusic {
 
     unpause(msg) {
         return new Promise(resolve => {
-            let wr = this._verifyRequest(msg);
+            let wr = this._verifyInVoiceChannel(msg);
             if (wr.isError) return resolve(wr);
 
             wr = this._verifyQueueIsNotEmpty();
@@ -229,6 +222,23 @@ class GatsMusic {
         return wr.setResponse('Can\'t pause what\'s paused, genius').setIsError(true);
     }
 
+    _play(queueItem) {
+        // Attempt to queue song
+        const wr = this.musicQueue.queue(queueItem);
+        if (wr.isError) return wr;
+
+        // Initiate recursive play
+        if (this.musicQueue.length() === 1) {
+            this._playRecursively();
+            return wr.setResponse('Initiated Recursive Play').setIsSendable(false);
+        // Else, Ping user that their song has been added to the queue
+        } else {
+            const { title } = queueItem.info.player_response.videoDetails;
+            const queueText = `${randomMusicEmoji()} **${title}** *has been queued in position* **#${this.musicQueue.length() - 1}**`;
+            return wr.setResponse(queueText);
+        }
+    }
+
     _playRecursively() {
         const { info, msg } = this.musicQueue.peek();
         const { title, videoId } = info.player_response.videoDetails;
@@ -272,7 +282,7 @@ class GatsMusic {
         return wr.setResponse(`There's nothing to unpause, genius.`).setIsError(true);
     }
 
-    _verifyPermission(msg, songIndex) {
+    _verifySongSkipPermission(msg, songIndex) {
         const { member } = msg;
         const wr = new WaffleResponse();
 
@@ -300,12 +310,12 @@ class GatsMusic {
     _verifyQueueIsNotEmpty() {
         const wr = new WaffleResponse();
         if (this.musicQueue.isEmpty()) {
-            return wr.setResponse(`*No songs are currently in the queue*`).setIsError(true);
+            wr.setResponse(`*No songs are currently in the queue*`).setIsError(true);
         }
         return wr;
     }
 
-    _verifyRequest(msg, options = {}) {
+    _verifyInVoiceChannel(msg, options = {}) {
         // Overwrite default options
         const defaultOptions = {
             skipUserValidation: false,
