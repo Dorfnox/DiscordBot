@@ -1,4 +1,4 @@
-const { channelId: musicChannelId } = require('./discordBotConfig.json').music;
+const { highWaterMarkBitShift } = require('./discordBotConfig.json').music;
 const ytdl = require('ytdl-core');
 const yts = require('yt-search');
 const MusicQueue = require('./MusicQueue');
@@ -79,7 +79,7 @@ class GatsMusic {
         })
         .catch(err => {
             return new WaffleResponse('⚠️ *unknown error occurred*').setErrorLocale('queue').setError(err).setIsSendable(false);
-        })
+        });
     }
 
     removeLast(msg) {
@@ -306,7 +306,7 @@ class GatsMusic {
         const { title, videoId } = info.player_response.videoDetails;
         const ytLink = `https://www.youtube.com/watch?v=${videoId}`;
 
-        const readableStream = ytdl(ytLink, { quality: 'highestaudio', highWaterMark: 1 << 25 }); /* ~32mbs */
+        const readableStream = ytdl(ytLink, { quality: 'highestaudio', highWaterMark: 1 << highWaterMarkBitShift }); /* ~4mbs */
         const connection = this._getVoiceConnection();
         if (!connection) return ;
         connection

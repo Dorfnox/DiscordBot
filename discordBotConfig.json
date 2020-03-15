@@ -12,6 +12,7 @@
         ]
     },
     "music": {
+        "highWaterMarkBitShift": 22,
         "maxDuplicates": 2,
         "maxQueueLength": 15,
         "maxSongLength": 10,
