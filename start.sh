@@ -10,7 +10,7 @@ npm install
 if [ -z "$1" ]
 then
 	xvfb-run -a node .
-elif [ "$1" == "async"]
+elif [ "$1" == "async" ]
 then
 	nohup xvfb-run -a node . &
 else
