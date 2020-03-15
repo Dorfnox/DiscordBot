@@ -50,9 +50,8 @@ class GatsMusic {
             let wr = this._verifyInVoiceChannel(msg, options);
             if (wr.isError) return resolve(wr);
 
-            const ytLink = args[0];
             // No argument provided
-            if (!ytLink || !args.join('')) {
+            if (!args[0] || !args.join('')) {
                 // check if there's a song to unpause
                 const dispatcher = this._getDispatcher();
                 if (dispatcher && dispatcher.paused) {
@@ -63,19 +62,24 @@ class GatsMusic {
                 return resolve(wr.setResponse('*To play music, please provide a YouTube link or text*').setIsError(true));
             }
 
-             // Youtube link provided
-             let infoPromise;
-             if (['youtube', 'youtu.be'].some(substring => ytLink.includes(substring))) {
-                 infoPromise = this._getInfoViaLink(ytLink);
-
-             // String provided
-             } else infoPromise = this._getInfoViaString(args);
-
              // Play music
-             return infoPromise.then(wr => resolve(wr.isError ? wr : this._play({ info: wr.response, msg })));
+             return this._getYTInfo(args).then(wr => resolve(wr.isError ? wr : this._play({ info: wr.response, msg })));
         }).catch(err => {
             return new WaffleResponse('⚠️ *unknown error occurred*').setErrorLocale('play').setError(err).setIsSendable(false);
         });
+    }
+
+    queue(msg) {
+        return new Promise(resolve => {
+            const wr = this._verifyQueueIsNotEmpty();
+            if (wr.isError) return resolve(wr);
+
+            const embeddedMessage = this._getEmbeddedQueueMessage();
+            return resolve(wr.setEmbeddedResponse(embeddedMessage));
+        })
+        .catch(err => {
+            return new WaffleResponse('⚠️ *unknown error occurred*').setErrorLocale('queue').setError(err).setIsSendable(false);
+        })
     }
 
     removeLast(msg) {
@@ -162,6 +166,26 @@ class GatsMusic {
         });
     }
 
+    _buildEmbeddedVideoMessage(header, title, videoId, username, fields = []) {
+        const emoji = randomMusicEmoji();
+        const queueLen = this.musicQueue.length() - 1;
+        const queueLenStr = queueLen === 1 ? `is **1** song` : `are **${queueLen}** songs`;
+        const description = `Requested by **${username}**. There ${queueLenStr} in the queue.`;
+        const embeddedMessage = {
+            author: {
+                name: header,
+            },
+            title: `${emoji}  ${title}`,
+            url: `https://www.youtube.com/watch?v=${videoId}`,
+            description,
+            thumbnail: {
+                url: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+            },
+            fields,
+        };
+        return embeddedMessage;
+    }
+
     async _endDispatcher() {
         const wr = new WaffleResponse();
         const dispatcher = this._getDispatcher();
@@ -172,15 +196,48 @@ class GatsMusic {
         return wr;
     }
 
-    _getInfoViaLink(ytLink)  {
+    _getEmbeddedQueueMessage(includeFields = true) {
+        const { info, msg } = this.musicQueue.peek();
+        const { username } = msg.author;
+        const { title, videoId } = info.player_response.videoDetails;
+        const dispatcher = this._getDispatcher();
+        const playState = dispatcher && dispatcher.paused ? 'Paused' : 'Now Playing';
+        let fields = [];
+        if (includeFields) {
+            fields = this.getSimpleQueue().slice(1).map((r, i) => {
+                return {
+                    name: `#${i + 1} ~ by ${r.author.username}`,
+                    value: `${r.title}`,
+                    inline: false
+                }
+            });
+            if (fields.length > 0) {
+                fields.unshift({ name: '\u200b', value: '***Queue***'});
+            }
+        }
+        return this._buildEmbeddedVideoMessage(playState, title, videoId, username, fields);
+    }
+
+    _getYTInfo(args) {
+        const ytLink = args[0];
+        // Youtube link provided
+        if (['youtube', 'youtu.be'].some(substring => ytLink.includes(substring))) {
+            return this._getYTInfoViaLink(ytLink);
+        }
+        // String provided
+        return this._getYTInfoViaString(args);
+
+    }
+
+    _getYTInfoViaLink(ytLink)  {
         const wr = new WaffleResponse();
         if (!ytdl.validateURL(ytLink)) {
-            return wr.setResponse(`Invalid url '${ytLink}'. Imma need some valid blueberries, bruh!`).setIsError(true);
+            return Promise.resolve(wr.setResponse(`Invalid url '${ytLink}'. Imma need some valid blueberries, bruh!`).setIsError(true));
         }
         return ytdl.getBasicInfo(ytLink).then(response => wr.setResponse(response));
     }
 
-    _getInfoViaString(args) {
+    _getYTInfoViaString(args) {
         const argString = args.join(' ');
         const options = { query: argString, pageStart: 1, pageEnd: 1 };
         const wr = new WaffleResponse();
@@ -195,7 +252,7 @@ class GatsMusic {
                 if (!video) {
                     return wr.setResponse(`Coulld not find any results for '${argString}'. Try editing your search.`).setIsError(true);
                 }
-                return this._getInfoViaLink(video.url);
+                return this._getYTInfoViaLink(video.url);
             })
             .catch(err => {
                 return wr.setResponse(`Failed to perfom find for '${argString}'. Please try again.`).setError(err);
@@ -219,7 +276,7 @@ class GatsMusic {
             const { title } = this.musicQueue.peek().info.player_response.videoDetails;
             return wr.setResponse(`*paused ${title}*`);
         }
-        return wr.setResponse('Can\'t pause what\'s paused, genius').setIsError(true);
+        return wr.setResponse(`Can't pause what's already paused, genius`).setIsError(true);
     }
 
     _play(queueItem) {
@@ -227,31 +284,36 @@ class GatsMusic {
         const wr = this.musicQueue.queue(queueItem);
         if (wr.isError) return wr;
 
+        const queueLen = this.musicQueue.length();
+
         // Initiate recursive play
-        if (this.musicQueue.length() === 1) {
+        if (queueLen === 1) {
             this._playRecursively();
             return wr.setResponse('Initiated Recursive Play').setIsSendable(false);
         // Else, Ping user that their song has been added to the queue
         } else {
-            const { title } = queueItem.info.player_response.videoDetails;
-            const queueText = `${randomMusicEmoji()} **${title}** *has been queued in position* **#${this.musicQueue.length() - 1}**`;
-            return wr.setResponse(queueText);
+            const { title, videoId } = queueItem.info.player_response.videoDetails;
+            const { username } = queueItem.msg.author;
+            const header = `Queued in position #${queueLen}`;
+            const embeddedMessage = this._buildEmbeddedVideoMessage(header, title, videoId, username);
+            return wr.setEmbeddedResponse(embeddedMessage);
         }
     }
 
     _playRecursively() {
+        const wr = new WaffleResponse();
         const { info, msg } = this.musicQueue.peek();
         const { title, videoId } = info.player_response.videoDetails;
         const ytLink = `https://www.youtube.com/watch?v=${videoId}`;
-        const wr = new WaffleResponse();
 
-        const readableStream = ytdl(ytLink, { quality: 'highestaudio', highWaterMark: 1 << 21 }); /* ~2mbs */
+        const readableStream = ytdl(ytLink, { quality: 'highestaudio', highWaterMark: 1 << 25 }); /* ~32mbs */
         const connection = this._getVoiceConnection();
         if (!connection) return ;
         connection
             .play(readableStream, { highWaterMark: 1 })
             .on('start', () => {
-                wr.setResponse(`${randomMusicEmoji()} *now playing* ~ ~ **${title}**`).reply(msg);
+                const embeddedMessage = this._getEmbeddedQueueMessage(false);
+                wr.setEmbeddedResponse(embeddedMessage).reply(msg);
                 this.client.user.setPresence({ activity: { name: `${title} 🎧`, type: 'PLAYING', url: ytLink }});
             })
             .on('finish', () => {
@@ -279,7 +341,7 @@ class GatsMusic {
             const { title } = this.musicQueue.peek().info.player_response.videoDetails;
             return wr.setResponse(`*unpaused ${title}*`);
         }
-        return wr.setResponse(`There's nothing to unpause, genius.`).setIsError(true);
+        return wr.setResponse(`*can't unpause what's already playing, genius.*`).setIsError(true);
     }
 
     _verifySongSkipPermission(msg, songIndex) {

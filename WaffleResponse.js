@@ -13,11 +13,15 @@ class WaffleResponse {
         this.isLoggable = true;
         this.isSendable = true;
         this.isDirectReply = false;
+        this.logResponseLimit = -1;
     }
 
-    setResponse(response) {
-        this.response = response;
-        return this;
+    setEmbeddedResponse(options = {}) {
+        const defaultOptions = {
+            color: randomFromArray(this.colors),
+        }
+        const embed = Object.assign(defaultOptions, options);
+        return this.setResponse({ embed });
     }
 
     setError(error) {
@@ -53,29 +57,37 @@ class WaffleResponse {
         return this;
     }
 
-    setEmbeddedResponse(options = {}) {
-        const defaultOptions = {
-            color: randomFromArray(this.colors),
-        }
-        const embed = Object.assign(defaultOptions, options);
-        return this.setResponse({ embed });
-        //https://i.ytimg.com/vi/paZ2PaXdpGw/hqdefault.jpg
+    setLogResponseLimit(limit) {
+        this.logResponseLimit = Math.max(limit || 0, 0);
+        return this;
+    }
+
+    setResponse(response) {
+        this.response = response;
+        return this;
     }
 
     async reply(msg) {
-        const logger = this.isError ? console.error : console.log;
-        if (this.isLoggable) {
-            const username = msg && msg.member ? msg.member.user.username : 'unknownUser';
-            const errorLocale = this.errorLocale ? ` | ${this.errorLocale}` : '';
-            const error = this.error ? `\n_e_${this.error}` : '';
-            logger(`[${Date.now()} | ${username}${errorLocale}]\n_r_${this.response}${error}`);
-        }
         if (msg && this.isSendable && this.response) {
             if (this.isDirectReply) {
                 await msg.reply(this.response);
             }
             else await msg.channel.send(this.response);
         }
+        // Log results without blocking main thread
+        const now = new Date().toISOString();
+        setTimeout(() => {
+            if (this.isLoggable) {
+                const logger = this.isError ? console.error : console.log;
+                const username = msg && msg.member ? msg.member.user.username : 'unknownUser';
+                const errorLocale = this.errorLocale ? ` | ${this.errorLocale}` : '';
+                const logError = this.error ? `\n__ERR__ ${this.error}` : '';
+                const logResponse = this.logResponseLimit > -1 ?
+                    `${this.response.substr(0, this.logResponseLimit)}${this.logResponseLimit < this.response.length ? `... +${this.response.length - this.logResponseLimit} characters` : ''}` :
+                    this.response;
+                logger(`[${now} | ${username}${errorLocale}] ${logResponse}${logError}`);
+            }
+        }, 100);
         return this;
     }
 }

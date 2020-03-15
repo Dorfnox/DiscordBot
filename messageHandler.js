@@ -2,6 +2,7 @@ const config = require('./discordBotConfig.json');
 const GatsScraper = require('./GatsScraper');
 const GatsMusic = require('./gatsMusic');
 const Pokemon = require('./Pokemon');
+const WaffleResponse = require('./WaffleResponse');
 const { prefixes } = config.chat;
 
 class MessageHandler {
@@ -163,8 +164,9 @@ class MessageHandler {
     }
 
     executeJoin(msg, args) {
+        const wr = new WaffleResponse().setIsDirectReply(true);
         if (!args || !args[0]) {
-            return msg.reply('Please provide a voice channel name, dimwit');
+            return wr.setResponse('Please provide a voice channel name, dimwit').reply(msg);
         }
         const channelToJoin = args[0];
         const validChannels = [];
@@ -175,28 +177,21 @@ class MessageHandler {
             }
         });
         if (!validChannels || !validChannels[0]) {
-            return msg.reply('Please provide an accurate voice channel name');
+            return wr.setResponse('Please provide an accurate voice channel name').reply(msg);
 
         }
         const dispatcher = this.gatsMusic._getDispatcher();
         if (dispatcher && dispatcher.paused) {
-            return msg.reply('Please Unpause me to join another channel (:waffle: unpause)');
+            return wr.setResponse('Please Unpause me to join another channel (:waffle: unpause)').reply(msg);
         }
+        wr.setIsDirectReply(false);
         validChannels[0].join()
-            .then(() => {
-                const text = `✅ ~ Successfully connected to channel '${channelToJoin}'!`;
-                console.log(text);
-                msg.channel.send(text);
-            })
-            .catch(err => {
-                const text = `🚫 ~ Failed to connect to channel '${channelToJoin}'`;
-                console.error(text, err);
-                msg.reply(text);
-            });
+            .then(() => wr.setResponse(`✅ ~ Successfully connected to channel '${channelToJoin}'!`).reply(msg))
+            .catch(err => wr.setResponse(`🚫 ~ Failed to connect to channel '${channelToJoin}'`).setError(err).reply(msg));
     }
 
     executeNani(msg) {
-        msg.channel.send("*Nani the fuck did you just fucking iimasu about watashi, you chiisai bitch desuka? Watashi'll have anata know that watashi graduated top of my class in Nihongo 3, and watashi've been involved in iroirona Nihongo tutoring sessions, and watashi have over sanbyaku perfect test scores. Watashi am trained in kanji, and watashi is the top letter writer in all of southern California. Anata are nothing to watashi but just another weeaboo. Watashi will korosu anata the fuck out with vocabulary the likes of which has neber meen mimasu'd before on this continent, mark watashino fucking words. Anata thinks that anata can get away with hanashimasing that kuso to watashi over the intaaneto? Omou again, fucker. As we hanashimasu, watashi am contacting watashino secret netto of otakus accross the USA, and anatano IP is being traced right now so you better junbishimasu for the ame, ujimushi. The ame that korosu's the pathetic chiisai thing anata calls anatano life. You're fucking shinimashita'd, akachan.*");
+        new WaffleResponse("*Nani the fuck did you just fucking iimasu about watashi, you chiisai bitch desuka? Watashi'll have anata know that watashi graduated top of my class in Nihongo 3, and watashi've been involved in iroirona Nihongo tutoring sessions, and watashi have over sanbyaku perfect test scores. Watashi am trained in kanji, and watashi is the top letter writer in all of southern California. Anata are nothing to watashi but just another weeaboo. Watashi will korosu anata the fuck out with vocabulary the likes of which has neber meen mimasu'd before on this continent, mark watashino fucking words. Anata thinks that anata can get away with hanashimasing that kuso to watashi over the intaaneto? Omou again, fucker. As we hanashimasu, watashi am contacting watashino secret netto of otakus accross the USA, and anatano IP is being traced right now so you better junbishimasu for the ame, ujimushi. The ame that korosu's the pathetic chiisai thing anata calls anatano life. You're fucking shinimashita'd, akachan.*").setLogResponseLimit(30).reply(msg);
     }
 
     executeOops(msg) {
@@ -216,21 +211,7 @@ class MessageHandler {
     }
 
     executeQueue(msg) {
-        const queue = this.gatsMusic.getSimpleQueue();
-        let text;
-        if (!queue.length) {
-            text = '*There are no songs in the queue*';
-        } else {
-            const dispatcher = this.gatsMusic._getDispatcher();
-            const playText = (dispatcher && dispatcher.paused) ? '***Paused***' : '***Now Playing***';
-            text = queue.map((r, i, all) => {
-                if (i === 0) {
-                    return `${playText}\n\`\`\`css\n${r.author.username} with ${r.title}\`\`\`${all.length > 1 ? '***Queue***' : ''}`;
-                }
-                return `> #${i} ~ ${r.author.username} with **${r.title}**`;
-            }).join('\n');
-        }
-        msg.channel.send(text);
+        this.gatsMusic.queue(msg).then(wr => wr.reply(msg));
     }
 
     executeRepeat(msg) {

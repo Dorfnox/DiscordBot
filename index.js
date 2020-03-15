@@ -14,5 +14,5 @@ client.on('ready', () => {
 client.on('message', msg => messageHandler.handleMessage(msg));
 
 // Initiate either regular client or test client
-client.login(token);
-// client.login(testToken);
+// client.login(token);
+client.login(testToken);
