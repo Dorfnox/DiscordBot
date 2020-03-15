@@ -294,7 +294,7 @@ class GatsMusic {
         } else {
             const { title, videoId } = queueItem.info.player_response.videoDetails;
             const { username } = queueItem.msg.author;
-            const header = `Queued in position #${queueLen}`;
+            const header = `Queued in position #${queueLen - 1}`;
             const embeddedMessage = this._buildEmbeddedVideoMessage(header, title, videoId, username);
             return wr.setEmbeddedResponse(embeddedMessage);
         }
