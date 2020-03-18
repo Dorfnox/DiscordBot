@@ -13,6 +13,10 @@ client.on('ready', () => {
 
 client.on('message', msg => messageHandler.handleMessage(msg));
 
+client.on('error', err => {
+  console.log('DISCORDJS Error: ', err.message);
+});
+
 // Initiate either regular client or test client
 client.login(token);
 // client.login(testToken);
