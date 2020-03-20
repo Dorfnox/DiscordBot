@@ -21,7 +21,8 @@ class WaffleResponse {
             color: randomFromArray(this.colors),
         }
         const embed = Object.assign(defaultOptions, options);
-        return this.setResponse({ embed });
+        this.response = { embed };
+        return this;
     }
 
     setError(error) {
@@ -63,6 +64,9 @@ class WaffleResponse {
     }
 
     setResponse(response) {
+        if (typeof response === 'string') {
+            return this.setEmbeddedResponse({ description: response });
+        }
         this.response = response;
         return this;
     }
@@ -75,19 +79,20 @@ class WaffleResponse {
             else await msg.channel.send(this.response);
         }
         // Log results without blocking main thread
-        const now = new Date().toISOString();
-        setTimeout(() => {
-            if (this.isLoggable) {
+        if (this.isLoggable) {
+            const now = new Date().toISOString();
+            setTimeout(() => {
                 const logger = this.isError ? console.error : console.log;
                 const username = msg && msg.member ? msg.member.user.username : 'unknownUser';
                 const errorLocale = this.errorLocale ? ` | ${this.errorLocale}` : '';
                 const logError = this.error ? `\n__ERR__ ${this.error}` : '';
+                const response = this.response.embed ? this.response.embed.description | '' : '';
                 const logResponse = this.logResponseLimit > -1 ?
-                    `${this.response.substr(0, this.logResponseLimit)}${this.logResponseLimit < this.response.length ? `... +${this.response.length - this.logResponseLimit} characters` : ''}` :
+                    `${response.substr(0, this.logResponseLimit)}${this.logResponseLimit < response.length ? `... +${response.length - this.logResponseLimit} characters` : ''}` :
                     this.response;
                 logger(`[${now} | ${username}${errorLocale}] ${logResponse}${logError}`);
-            }
-        }, 100);
+            }, 100);
+        }
         return this;
     }
 }

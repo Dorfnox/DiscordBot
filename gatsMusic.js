@@ -144,11 +144,23 @@ class GatsMusic {
             }
 
             // Otherwise, end current song
-            return this._endDispatcher().then(wr => resolve(wr.setIsSendable(false)));
+            return this._endDispatcher().then(wr => resolve(wr.setResponse("Skipped / Stopped").setIsSendable(false)));
         })
         .catch(err => {
             return new WaffleResponse('⚠️ *unknown error - please try again').setErrorLocale('skip').setError(err).setIsSendable(false);
         });
+    }
+
+    song(msg) {
+        return new Promise(resolve => {
+            let wr = this._verifyQueueIsNotEmpty();
+            if (wr.isError) return resolve(wr);
+
+            return resolve(wr.setEmbeddedResponse(this._getEmbeddedQueueMessage(false)));
+        })
+        .catch(err => {
+            return new WaffleResponse('⚠️ *unknown error - please try again').setErrorLocale('song').setError(err).setIsSendable(false);
+        })
     }
 
     unpause(msg) {
@@ -234,7 +246,7 @@ class GatsMusic {
         if (!ytdl.validateURL(ytLink)) {
             return Promise.resolve(wr.setResponse(`Invalid url '${ytLink}'. Imma need some valid blueberries, bruh!`).setIsError(true));
         }
-        return ytdl.getBasicInfo(ytLink).then(response => wr.setResponse(response));
+        return ytdl.getInfo(ytLink).then(response => wr.setResponse(response));
     }
 
     _getYTInfoViaString(args) {
@@ -306,11 +318,18 @@ class GatsMusic {
         const { title, videoId } = info.player_response.videoDetails;
         const ytLink = `https://www.youtube.com/watch?v=${videoId}`;
 
-        const readableStream = ytdl(ytLink, { quality: 'highestaudio', highWaterMark: 1 << highWaterMarkBitShift }); /* ~4mbs */
         const connection = this._getVoiceConnection();
         if (!connection) return ;
-        connection
-            .play(readableStream, { highWaterMark: 1 })
+
+        const readableStream = ytdl.downloadFromInfo(info, { quality: 'highestaudio', highWaterMark: 1 << highWaterMarkBitShift }); /* ~4mbs */
+
+        readableStream.on('error', err => {
+            wr.setResponse(`'${title}' encountered an error while streaming. skipping.`).setError(err).reply(msg);
+            const dispatcher = this._getDispatcher();
+            if (dispatcher) dispatcher.end();
+        });
+
+        connection.play(readableStream, { highWaterMark: 1 })
             .on('start', () => {
                 const embeddedMessage = this._getEmbeddedQueueMessage(false);
                 wr.setEmbeddedResponse(embeddedMessage).reply(msg);
@@ -341,7 +360,7 @@ class GatsMusic {
             const { title } = this.musicQueue.peek().info.player_response.videoDetails;
             return wr.setResponse(`*unpaused ${title}*`);
         }
-        return wr.setResponse(`*can't unpause what's already playing, genius.*`).setIsError(true);
+        return wr.setResponse(`*can't unpause what's not paused, genius.*`).setIsError(true);
     }
 
     _verifySongSkipPermission(msg, songIndex) {

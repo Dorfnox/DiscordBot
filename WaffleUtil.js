@@ -1,3 +1,7 @@
+function arrayFromObjectValues(object) {
+    return Object.keys(object).map(key => object[key]);
+}
+
 function decrementMaxMap(map, id) {
     const newCount = map.get(id) - 1;
     if (newCount === 0) {
@@ -16,6 +20,7 @@ function randomMusicEmoji() {
 }
 
 module.exports = {
+    arrayFromObjectValues,
     decrementMaxMap,
     randomFromArray,
     randomMusicEmoji
