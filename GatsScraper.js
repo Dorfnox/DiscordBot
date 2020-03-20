@@ -1,6 +1,7 @@
 const Nightmare = require("nightmare");
 const WaffleResponse = require("./WaffleResponse");
 const axios = require('axios').default;
+const cheerio = require('cheerio');
 
 class GatsScraper {
   gatsCache = {
@@ -11,19 +12,25 @@ class GatsScraper {
     }
   };
 
-  clanStats(args) {
+  clanstats(args) {
     const wr = new WaffleResponse();
     return new Promise(resolve => {
       if (!args || !args[0]) {
         return resolve(wr.setResponse('⚠️ Please provide a clan name argument. eg: KCGO'));
       }
       const clanName = args[0];
-      const url = `https://stats.gats.io/clan/${clanName}`
-      const req = axios.get(url)
-        .then(response => {
-          console.log(response);
-        }).catch(err => {
-          console.log('ERR', err);
+
+      this._clanStatsData(clanName)
+        .then(allStats => {
+          if (!allStats || !allStats.stats || !allStats.stats[0]) {
+            return resolve(wr.setEmbeddedResponse({ description: `*No stats found for clan* **${clanName}**. Maybe you made a typo?` }));
+          }
+          const { stats, favoriteLoadouts } = allStats;
+          const title = `Stats for ${clanName}`;
+          const description = stats.map(s => `**${s.stat}:** ${s.value}`).join('\n').concat('\n\n***Favorite Loadouts***\n');
+          const fields = favoriteLoadouts.map(fl => { return { name: fl.stat, value: fl.value } });
+          const thumbnail = { url: favoriteLoadouts[0].imageUrl };
+          return resolve(wr.setEmbeddedResponse({ title, description, fields, thumbnail }));
         });
     })
     .catch(err => {
@@ -64,6 +71,30 @@ class GatsScraper {
         });
     }
     return Promise.resolve(wr.setResponse(this.gatsCache.highScoresData.data));
+  }
+
+  _clanStatsData(clanName) {
+    return axios.get(`https://stats.gats.io/clan/${clanName}`)
+      .then(response => response.data)
+      .then(data => cheerio.load(data))
+      .then(cdata => {
+        // Collect Regular Stats
+        const stats = cdata('#pageContainer > div:nth-child(1) > div:nth-child(1) > table > tbody > tr').map((_, elem) => {
+          const stat = elem.children[0].next.children[0].data.trim();
+          const value = elem.children[2].next.children[0].data.trim();
+          return { stat, value };
+        }).get();
+
+        // Collect Favorite Loadouts
+        const favoriteLoadouts = cdata('#pageContainer > div:nth-child(1) > div:nth-child(2) > div > table > tbody > tr').map((_, elem) => {
+          const stat = elem.children[1].children[1].children[0].data.trim();
+          const value = elem.children[1].children[3].children[0].data.trim();
+          const imageUrl = `https://stats.gats.io${elem.children[3].children[0].attribs.src.trim()}`;
+          return { stat, value, imageUrl };
+        }).get();
+
+        return { stats, favoriteLoadouts };
+    });
   }
 }
 

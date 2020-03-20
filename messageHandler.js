@@ -196,7 +196,7 @@ class MessageHandler {
     }
 
     executeClanstats(msg, args) {
-        this.gatsScraper.clanStats(args).then(wr => wr.reply(msg));
+        this.gatsScraper.clanstats(args).then(wr => wr.reply(msg));
     }
 
     executeFeed(msg) {
