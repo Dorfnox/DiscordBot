@@ -31,6 +31,13 @@ class MessageHandler {
             }
         }
         this.commands = {
+            'clanstats': {
+                name: 'Clanstats',
+                execute: this.executeClanstats,
+                description: `Displays the stats of a clan (eg | 'w clanstats KCGO')`,
+                aliases: ['cs'],
+                helpCategory: this.helpCategory.gats,
+            },
             'feed': {
                 name: 'Feed',
                 execute: this.executeFeed,
@@ -186,6 +193,10 @@ class MessageHandler {
 
         // Runs command
         cmds[cmd].execute.apply(this, [msg, argsAfterCommand]);
+    }
+
+    executeClanstats(msg, args) {
+        this.gatsScraper.clanStats(args).then(wr => wr.reply(msg));
     }
 
     executeFeed(msg) {

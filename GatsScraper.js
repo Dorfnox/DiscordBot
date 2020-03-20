@@ -1,5 +1,6 @@
 const Nightmare = require("nightmare");
 const WaffleResponse = require("./WaffleResponse");
+const axios = require('axios').default;
 
 class GatsScraper {
   gatsCache = {
@@ -9,6 +10,26 @@ class GatsScraper {
       data: {}
     }
   };
+
+  clanStats(args) {
+    const wr = new WaffleResponse();
+    return new Promise(resolve => {
+      if (!args || !args[0]) {
+        return resolve(wr.setResponse('⚠️ Please provide a clan name argument. eg: KCGO'));
+      }
+      const clanName = args[0];
+      const url = `https://stats.gats.io/clan/${clanName}`
+      const req = axios.get(url)
+        .then(response => {
+          console.log(response);
+        }).catch(err => {
+          console.log('ERR', err);
+        });
+    })
+    .catch(err => {
+      return wr.setResponse('⚠️ Unknown error occurred').setError(err).setIsSendable(false);
+    })
+  }
 
   getTopFive() {
     const wr = new WaffleResponse();
