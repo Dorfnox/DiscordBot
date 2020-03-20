@@ -1,5 +1,6 @@
-const Nightmare = require("nightmare");
-const WaffleResponse = require("./WaffleResponse");
+const Nightmare = require('nightmare');
+const WaffleResponse = require('./WaffleResponse');
+const { getSafe } = require('./WaffleUtil');
 const axios = require('axios').default;
 const cheerio = require('cheerio');
 
@@ -80,16 +81,16 @@ class GatsScraper {
       .then(cdata => {
         // Collect Regular Stats
         const stats = cdata('#pageContainer > div:nth-child(1) > div:nth-child(1) > table > tbody > tr').map((_, elem) => {
-          const stat = elem.children[0].next.children[0].data.trim();
-          const value = elem.children[2].next.children[0].data.trim();
+          const stat = getSafe(() => elem.children[0].next.children[0].data.trim(), 'no stats');
+          const value = getSafe(() => elem.children[2].next.children[0].data.trim(), 'no value');
           return { stat, value };
         }).get();
 
         // Collect Favorite Loadouts
         const favoriteLoadouts = cdata('#pageContainer > div:nth-child(1) > div:nth-child(2) > div > table > tbody > tr').map((_, elem) => {
-          const stat = elem.children[1].children[1].children[0].data.trim();
-          const value = elem.children[1].children[3].children[0].data.trim();
-          const imageUrl = `https://stats.gats.io${elem.children[3].children[0].attribs.src.trim()}`;
+          const stat = getSafe(() => elem.children[1].children[1].children[0].data.trim(), 'no stats');
+          const value = getSafe(() => elem.children[1].children[3].children[0].data.trim(), 'no value');
+          const imageUrl = getSafe(() => `https://stats.gats.io${elem.children[3].children[0].attribs.src.trim()}`, 'https://stats.gats.io/img/gats_logo.png');
           return { stat, value, imageUrl };
         }).get();
 

@@ -11,6 +11,14 @@ function decrementMaxMap(map, id) {
     }
 }
 
+function getSafe(fn, defaultVal) {
+    try {
+        return fn();
+    } catch (e) {
+        return defaultVal;
+    }
+}
+
 function randomFromArray(myArray) {
     return myArray.length > 0 ? myArray[Math.floor(Math.random() * myArray.length)] : null;
 }
@@ -22,6 +30,7 @@ function randomMusicEmoji() {
 module.exports = {
     arrayFromObjectValues,
     decrementMaxMap,
+    getSafe,
     randomFromArray,
     randomMusicEmoji
 }
