@@ -11,7 +11,7 @@ function decrementMaxMap(map, id) {
     }
 }
 
-function getSafe(fn, defaultVal) {
+function getSafe(fn, defaultVal = null) {
     try {
         return fn();
     } catch (e) {

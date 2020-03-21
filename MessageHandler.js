@@ -1,8 +1,10 @@
 const config = require('./discordBotConfig.json');
+const Discord = require('discord.js');
 const GatsScraper = require('./GatsScraper');
 const GatsMusic = require('./gatsMusic');
 const Pokemon = require('./Pokemon');
 const WaffleResponse = require('./WaffleResponse');
+const WaffleMail = require('./WaffleMail');
 const { arrayFromObjectValues, randomFromArray } = require('./WaffleUtil');
 const { prefixes } = config.chat;
 
@@ -12,6 +14,7 @@ class MessageHandler {
         this.gatsMusic = new GatsMusic(client);
         this.gatsScraper = new GatsScraper();
         this.pokemon = new Pokemon();
+        this.waffleMail = new WaffleMail(client);
         this.helpCategory = {
             gats: {
                 name: 'Gats',
@@ -160,8 +163,14 @@ class MessageHandler {
         const { content, guild, author } = msg;
         const wr = new WaffleResponse();
 
-        if (!guild || !content || !author || author.bot) {
+        if (!content || !author || author.bot) {
             return ;
+        }
+
+        // Handle Direct Messages
+
+        if (!guild && msg.channel instanceof Discord.DMChannel) {
+            return this.waffleMail.handleDM(msg);
         }
 
         const args = content.trim().split(/\s+/);

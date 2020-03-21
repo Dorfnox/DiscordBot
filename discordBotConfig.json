@@ -12,7 +12,7 @@
         ]
     },
     "modMail": {
-        "modMailRoomName": "WaffleMail"
+        "modMailChannelCategoryName": "WaffleMail"
     },
     "mongoDB": {
         "mongoDatabaseName": "WaffleDB",

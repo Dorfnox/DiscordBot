@@ -1,5 +1,6 @@
-const MongoClient = require('mongodb').MongoClient;
 const { mongoDatabaseName, mongoDBUsername, mongoDBPassword } = require('./discordBotConfig.json').mongoDB;
+const MongoClient = require('mongodb').MongoClient;
+const { getSafe } = require('./WaffleUtil');
  
 // Wrapper class for performing operations on MongoDB
 class WaffleMongo {
@@ -7,17 +8,18 @@ class WaffleMongo {
     // Only have one instance of DB active
     static mongoClient = null;
 
-    static _connect() {
+    static async _connect() {
         // Do not perform if we already have an established connection
         if (!WaffleMongo._getClient()) {
             const mongDBUrl = `mongodb+srv://${mongoDBUsername}:${mongoDBPassword}@dorfnoxcluster-uwoxw.mongodb.net/test?retryWrites=true&w=majority`;
-            MongoClient.connect(mongDBUrl, { useUnifiedTopology: true }, (err, mongoClient) => {
-                if (err) {
-                    return console.log("Error connecting to MongoDB: ", err);
-                }
-                console.log(`${mongoDBUsername} connected successfully to MongoDB server`);
-                WaffleMongo._setClient(mongoClient);
-            });
+            return await MongoClient.connect(mongDBUrl, { useUnifiedTopology: true })
+                .then(mongoClient => {
+                    console.log(`${mongoDBUsername} connected successfully to MongoDB server`);
+                    WaffleMongo._setClient(mongoClient);
+                })
+                .catch(err => {
+                    console.log("Error connecting to MongoDB: ", err);
+                });
         }
     }
 
@@ -39,18 +41,76 @@ class WaffleMongo {
     }
 
     static _getDatabase() {
-        const client = WaffleMongo._getClient();
-        return client ? client.db(mongoDatabaseName) : null;
+        return getSafe(() => WaffleMongo._getClient().db(mongoDatabaseName), null);
     }
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~ //
 
-    constructor(collection) {
-        this.collection = collection;
+    constructor(collectionName) {
+        this.collectionName = collectionName;
     }
+
+    getCollection() {
+        return getSafe(() => WaffleMongo._getDatabase().collection(this.collectionName));
+    }
+
+    find(findArgs) {
+        const collection = this.getCollection();
+        if (collection) {
+            return collection.find(findArgs).toArray()
+                .catch(err => {
+                    console.log('Error performing find: ', err);
+                    throw err;
+                });
+        }
+        return Promise.reject('No collection');
+    }
+
+    insertOne(insertArgs) {
+        const collection = this.getCollection();
+        if (collection) {
+            return collection.insertOne(insertArgs)
+                .then(res => res.ops[0])
+                .catch(err => {
+                    console.log('Error performing insertOne: ', err);
+                    throw err;
+                });
+        }
+        return Promise.reject('No collection');
+    }
+
+    insertMany(insertArgs) {
+        const collection = this.getCollection();
+        if (collection) {
+            return collection.insertMany(insertArgs)
+                .then(res => res.ops)
+                .catch(err => {
+                    console.log('Error performing insertMany: ', err);
+                    throw err;
+                });
+        }
+        return Promise.reject('No collection');
+    }
+
+    updateOne(updateArgs) {
+        const collection = this.getCollection();
+        if (collection) {
+            const { _id } = updateArgs;
+            return collection.updateOne({ _id }, { $set: updateArgs })
+                .then(_ => updateArgs)
+                .catch(err => {
+                    console.log('Error performing updateOne: ', err);
+                    throw err;
+                });
+        }
+        return Promise.reject('No collection');
+    }
+
 }
 
-// Initial connect to server
-WaffleMongo._connect();
+// Initial connect to MongoDB server
+(async () => {
+    await WaffleMongo._connect();
+})();
 
 module.exports = WaffleMongo;
