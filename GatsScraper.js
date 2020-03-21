@@ -29,7 +29,7 @@ class GatsScraper {
           const { stats, favoriteLoadouts } = allStats;
           const title = `Clan Stats for ${clanName}`;
           const description = stats.map(s => `**${s.stat}:** ${s.value}`).join('\n').concat('\n\n***Favorite Loadouts***\n');
-          const fields = favoriteLoadouts.map(fl => { return { name: fl.stat, value: fl.value } });
+          const fields = favoriteLoadouts.map(fl => { return { name: fl.stat, value: fl.value, inline: true } });
           const thumbnail = { url: favoriteLoadouts[0].imageUrl };
           return resolve(wr.setEmbeddedResponse({ title, description, fields, thumbnail }));
         });

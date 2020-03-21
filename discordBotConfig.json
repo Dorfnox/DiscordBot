@@ -11,6 +11,10 @@
             "🧇"
         ]
     },
+    "mongoDB": {
+        "mongoDBUsername": "dorfnox",
+        "mongoDBPassword": "IFyINXRkAjjGisuo"
+    },
     "music": {
         "highWaterMarkBitShift": 22,
         "maxDuplicates": 2,
