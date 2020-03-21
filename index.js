@@ -1,8 +1,6 @@
 const Discord = require('discord.js');
 const MessageHandler = require('./MessageHandler');
-const WaffleMongo = require('./WaffleMongo');
 const { token, testToken } = require('./discordBotConfig.json').init;
-
 
 // Discord: Create a connection client ~~~~~~~~~~~~~~
 
@@ -15,5 +13,5 @@ discordClient.on('ready', () => {
 .on('message', msg => messageHandler.handleMessage(msg))
 .on('error', err => console.log('DISCORDJS Error: ', err.message));
 
-// client.login(token);
-discordClient.login(testToken);
+client.login(token);
+// discordClient.login(testToken);

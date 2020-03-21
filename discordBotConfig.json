@@ -11,6 +11,9 @@
             "🧇"
         ]
     },
+    "modMail": {
+        "modMailRoomName": "WaffleMail"
+    },
     "mongoDB": {
         "mongoDatabaseName": "WaffleDB",
         "mongoDBUsername": "dorfnox",
