@@ -12,6 +12,7 @@
         ]
     },
     "mongoDB": {
+        "mongoDatabaseName": "WaffleDB",
         "mongoDBUsername": "dorfnox",
         "mongoDBPassword": "IFyINXRkAjjGisuo"
     },

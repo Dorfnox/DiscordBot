@@ -1,18 +1,7 @@
 const Discord = require('discord.js');
-const MessageHandler = require('./messageHandler');
-const MongoClient = require('mongodb').MongoClient;
-const config = require('./discordBotConfig.json');
-const { token, testToken } = config.init;
-const { mongoDBUsername, mongoDBPassword } = config.mongoDB;
-
- 
-// MongoDB: connect to the server ~~~~~~~~~~~~~~~~~~~~
-
-const mongDBUrl = `mongodb+srv://${mongoDBUsername}:${mongoDBPassword}@dorfnoxcluster-uwoxw.mongodb.net/test?retryWrites=true&w=majority`;
-MongoClient.connect(mongDBUrl, { useUnifiedTopology: true }, (err, mongoClient) => {
-  console.log("Connected successfully to MongoDB server");
-  mongoClient.on('close', () => console.log('Disconnected from MongoDB server'));
-});
+const MessageHandler = require('./MessageHandler');
+const WaffleMongo = require('./WaffleMongo');
+const { token, testToken } = require('./discordBotConfig.json').init;
 
 
 // Discord: Create a connection client ~~~~~~~~~~~~~~
