@@ -21,13 +21,13 @@ class GatsScraper {
       }
       const clanName = args[0];
 
-      this._clanStatsData(clanName)
+      this._requestClanStatsData(clanName)
         .then(allStats => {
           if (!allStats || !allStats.stats || !allStats.stats[0]) {
             return resolve(wr.setEmbeddedResponse({ description: `*No stats found for clan* **${clanName}**. Maybe you made a typo?` }));
           }
           const { stats, favoriteLoadouts } = allStats;
-          const title = `Stats for ${clanName}`;
+          const title = `Clan Stats for ${clanName}`;
           const description = stats.map(s => `**${s.stat}:** ${s.value}`).join('\n').concat('\n\n***Favorite Loadouts***\n');
           const fields = favoriteLoadouts.map(fl => { return { name: fl.stat, value: fl.value } });
           const thumbnail = { url: favoriteLoadouts[0].imageUrl };
@@ -74,10 +74,10 @@ class GatsScraper {
     return Promise.resolve(wr.setResponse(this.gatsCache.highScoresData.data));
   }
 
-  _clanStatsData(clanName) {
+  _requestClanStatsData(clanName) {
     return axios.get(`https://stats.gats.io/clan/${clanName}`)
       .then(response => response.data)
-      .then(data => cheerio.load(data))
+      .then(data => cheerio.load(data, { normalizeWhitespace: true }))
       .then(cdata => {
         // Collect Regular Stats
         const stats = cdata('#pageContainer > div:nth-child(1) > div:nth-child(1) > table > tbody > tr').map((_, elem) => {

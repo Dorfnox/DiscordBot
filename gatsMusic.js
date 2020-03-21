@@ -329,8 +329,8 @@ class GatsMusic {
             if (dispatcher) dispatcher.end();
         });
 
-        connection.play(readableStream, { highWaterMark: 1 })
-            .on('start', () => {
+        const dispatcher = connection.play(readableStream, { highWaterMark: 1 })
+        dispatcher.on('start', () => {
                 const embeddedMessage = this._getEmbeddedQueueMessage(false);
                 wr.setEmbeddedResponse(embeddedMessage).reply(msg);
                 this.client.user.setPresence({ activity: { name: `${title} 🎧`, type: 'PLAYING', url: ytLink }});
@@ -350,6 +350,7 @@ class GatsMusic {
                     this._playRecursively();
                 }
             });
+        dispatcher.setVolumeLogarithmic(0.5);
     }
 
     _unpause() {
