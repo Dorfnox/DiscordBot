@@ -170,7 +170,8 @@ class MessageHandler {
         // Handle Direct Messages
 
         if (!guild && msg.channel instanceof Discord.DMChannel) {
-            return this.waffleMail.handleDM(msg);
+            // ~~~~ Currently in Beta, so here is where we exit
+            return ; //this.waffleMail.handleDM(msg);
         }
 
         const args = content.trim().split(/\s+/);
@@ -262,9 +263,13 @@ class MessageHandler {
         if (dispatcher && dispatcher.paused) {
             return wr.setResponse('Please Unpause me to join another channel (:waffle: unpause)').reply(msg);
         }
-        wr.setIsDirectReply(false);
         validChannels[0].join()
-            .then(() => wr.setResponse(`✅ ~ Successfully connected to channel '${channelToJoin}'!`).reply(msg))
+            .then(connection => {
+                connection.on('error', err => {
+                    return wr.setResponse(`⚠️ Disconnected to voice channel ${channelToJoin}. Please use 'w j ${channelToJoin}' to attempt a rejoin.`).setError(err).reply(msg);
+                });
+                wr.setResponse(`✅ ~ Successfully connected to channel '${channelToJoin}'!`).reply(msg);
+            })
             .catch(err => wr.setResponse(`🚫 ~ Failed to connect to channel '${channelToJoin}'`).setError(err).reply(msg));
     }
 
