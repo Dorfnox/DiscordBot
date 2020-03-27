@@ -1,6 +1,6 @@
 const Nightmare = require('nightmare');
 const WaffleResponse = require('./WaffleResponse');
-const { getSafe } = require('./WaffleUtil');
+const { getSafe, zeroWidthSpaceChar } = require('./WaffleUtil');
 const axios = require('axios').default;
 const cheerio = require('cheerio');
 
@@ -12,6 +12,7 @@ class GatsScraper {
       data: {}
     }
   };
+  gatsLogoUrl = 'https://stats.gats.io/img/gats_logo.png';
 
   clanstats(args) {
     const wr = new WaffleResponse();
@@ -27,16 +28,20 @@ class GatsScraper {
             return resolve(wr.setEmbeddedResponse({ description: `*No stats found for clan* **${clanName}**. Maybe you made a typo?` }));
           }
           const { stats, favoriteLoadouts } = allStats;
-          const title = `Clan Stats for ${clanName}`;
-          const description = stats.map(s => `**${s.stat}:** ${s.value}`).join('\n').concat('\n\n***Favorite Loadouts***\n');
-          const fields = favoriteLoadouts.map(fl => { return { name: fl.stat, value: fl.value, inline: true } });
+          const title = `Clan Stats for ${allStats.name}`;
+          const description = stats.map(s => `**${s.stat}:** ${s.value}`).join('\n');
           const thumbnail = { url: favoriteLoadouts[0].imageUrl };
-          return resolve(wr.setEmbeddedResponse({ title, description, fields, thumbnail }));
+          const fields = [
+            { name: zeroWidthSpaceChar, value: '***Favorite Loadouts***'},
+            ...favoriteLoadouts.map(fl => { return { name: fl.stat, value: fl.value, inline: true } }),
+            { name: zeroWidthSpaceChar, value: `[View these stats online](${allStats.url})` }
+          ];
+          return resolve(wr.setEmbeddedResponse({ title, description, thumbnail, fields }));
         });
     })
     .catch(err => {
       return wr.setResponse('⚠️ Unknown error occurred').setError(err).setIsSendable(false);
-    })
+    });
   }
 
   getTopFive() {
@@ -74,28 +79,72 @@ class GatsScraper {
     return Promise.resolve(wr.setResponse(this.gatsCache.highScoresData.data));
   }
 
+  playerstats(args) {
+    const wr = new WaffleResponse();
+    return new Promise(resolve => {
+      if (!args || !args[0]) {
+        return resolve(wr.setResponse('⚠️ Please provide a player name argument. eg: dorfnox'));
+      }
+      const playerName = args[0];
+
+      this._requestPlayerStatsData(playerName)
+        .then(allStats => {
+          if (!allStats || !allStats.stats || !allStats.stats[0]) {
+            return resolve(wr.setEmbeddedResponse({ description: `*No stats found for clan* **${playerName}**. Maybe you made a typo?` }));
+          }
+          const { stats, favoriteLoadouts } = allStats;
+          const title = `Player Stats for ${allStats.name}`;
+          const description = stats.map(s => `**${s.stat}:** ${s.value}`).join('\n');
+          const thumbnail = { url: favoriteLoadouts[0].imageUrl };
+          const fields = [
+            { name: zeroWidthSpaceChar, value: '***Favorite Loadouts***'},
+            ...favoriteLoadouts.map(fl => { return { name: fl.stat, value: fl.value, inline: true } }),
+            { name: zeroWidthSpaceChar, value: `[View these stats online](${allStats.url})` }
+          ];
+          return resolve(wr.setEmbeddedResponse({ title, description, fields, thumbnail }));
+        });
+    })
+    .catch(err => {
+      console.log('ERRROR', err);
+      return wr.setResponse('⚠️ Unknown error occurred').setError(err).setIsSendable(false);
+    });
+  }
+
   _requestClanStatsData(clanName) {
-    return axios.get(`https://stats.gats.io/clan/${clanName}`)
+    const url = `https://stats.gats.io/clan/${clanName}`;
+    return this._requestStatsData(url);
+  }
+
+  _requestPlayerStatsData(playerName) {
+    const url = `https://stats.gats.io/${playerName}`;
+    return this._requestStatsData(url);
+  }
+
+  _requestStatsData(url) {
+    return axios.get(url)
       .then(response => response.data)
       .then(data => cheerio.load(data, { normalizeWhitespace: true }))
       .then(cdata => {
+        // Collect proper name
+        const name = getSafe(() => cdata('#pageContainer > div:nth-child(1) > div:nth-child(1) > h1').text().trim().split(' ')[0], 'unknown');
+
         // Collect Regular Stats
         const stats = cdata('#pageContainer > div:nth-child(1) > div:nth-child(1) > table > tbody > tr').map((_, elem) => {
-          const stat = getSafe(() => elem.children[0].next.children[0].data.trim(), 'no stats');
-          const value = getSafe(() => elem.children[2].next.children[0].data.trim(), 'no value');
+          const stat = getSafe(() => elem.children[1].children[0].data.trim(), 'no stat');
+          const value = getSafe(() => elem.children[3].children[0].data.trim(), 'no value');
           return { stat, value };
         }).get();
 
         // Collect Favorite Loadouts
         const favoriteLoadouts = cdata('#pageContainer > div:nth-child(1) > div:nth-child(2) > div > table > tbody > tr').map((_, elem) => {
-          const stat = getSafe(() => elem.children[1].children[1].children[0].data.trim(), 'no stats');
+          const stat = getSafe(() => elem.children[1].children[1].children[0].data.trim(), 'no stat');
           const value = getSafe(() => elem.children[1].children[3].children[0].data.trim(), 'no value');
-          const imageUrl = getSafe(() => `https://stats.gats.io${elem.children[3].children[0].attribs.src.trim()}`, 'https://stats.gats.io/img/gats_logo.png');
+          const imageUrl = getSafe(() => `https://stats.gats.io${elem.children[3].children[0].attribs.src.trim()}`, this.gatsLogoUrl);
           return { stat, value, imageUrl };
         }).get();
 
-        return { stats, favoriteLoadouts };
-    });
+        return { url, name, stats, favoriteLoadouts };
+      });
   }
 }
 

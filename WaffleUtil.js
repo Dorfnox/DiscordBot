@@ -27,10 +27,13 @@ function randomMusicEmoji() {
     return randomFromArray([...'🎸🎹🎺🎻🎼🎷🥁🎧🎤']);
 }
 
+zeroWidthSpaceChar = '\u200b';
+
 module.exports = {
     arrayFromObjectValues,
     decrementMaxMap,
     getSafe,
     randomFromArray,
-    randomMusicEmoji
+    randomMusicEmoji,
+    zeroWidthSpaceChar
 }

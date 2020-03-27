@@ -37,7 +37,7 @@ class MessageHandler {
             'clanstats': {
                 name: 'Clanstats',
                 execute: this.executeClanstats,
-                description: `Displays the stats of a clan (eg | 'w clanstats KCGO')`,
+                description: `Displays the stats of a clan (eg: 'w clanstats kcgo').`,
                 aliases: ['cs'],
                 helpCategory: this.helpCategory.gats,
             },
@@ -85,6 +85,14 @@ class MessageHandler {
                 description: 'Play a song via description/youtube-link. Also unpauses.',
                 aliases: ['p', 'pl'],
                 helpCategory: this.helpCategory.music,
+            },
+            'playerstats': {
+                name: 'PlayerStats',
+                execute: this.executePlayerstats,
+                description: 'Displays the stats of a player (eg: w playerstats dorfnox).',
+                aliases: ['ps'],
+                helpCategory: this.helpCategory.gats,
+
             },
             'p!hint': {
                 name: 'p!hint',
@@ -287,6 +295,10 @@ class MessageHandler {
 
     executePlay(msg, args) {
         this.gatsMusic.play(msg, args).then(wr => wr.reply(msg));
+    }
+
+    executePlayerstats(msg, args) {
+        this.gatsScraper.playerstats(args).then(wr => wr.reply(msg));
     }
 
     executePokeHint(msg) {

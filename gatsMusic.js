@@ -3,7 +3,7 @@ const ytdl = require('ytdl-core');
 const yts = require('yt-search');
 const MusicQueue = require('./MusicQueue');
 const WaffleResponse = require('./WaffleResponse');
-const { getSafe, randomMusicEmoji } = require('./WaffleUtil');
+const { getSafe, randomMusicEmoji, zeroWidthSpaceChar } = require('./WaffleUtil');
 
 class GatsMusic {
     constructor(client) {
@@ -224,7 +224,7 @@ class GatsMusic {
                 }
             });
             if (fields.length > 0) {
-                fields.unshift({ name: '\u200b', value: '***Queue***'});
+                fields.unshift({ name: zeroWidthSpaceChar, value: '***Queue***'});
             }
         }
         return this._buildEmbeddedVideoMessage(playState, title, videoId, username, fields);
