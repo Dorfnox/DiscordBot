@@ -3,7 +3,7 @@ const ytdl = require('ytdl-core');
 const yts = require('yt-search');
 const MusicQueue = require('./MusicQueue');
 const WaffleResponse = require('./WaffleResponse');
-const { randomMusicEmoji } = require('./WaffleUtil');
+const { getSafe, randomMusicEmoji } = require('./WaffleUtil');
 
 class GatsMusic {
     constructor(client) {
@@ -338,6 +338,7 @@ class GatsMusic {
             .on('finish', () => {
                 wr.setResponse(`**${title}** has finished playing`).setIsSendable(false).reply(msg);
                 this.client.user.setPresence({ activity: { name: '', type: '' }});
+                getSafe(() => dispatcher.destroy());
                 this.musicQueue.dequeue();
                 if (!this.musicQueue.isEmpty()) {
                     this._playRecursively();
@@ -345,6 +346,8 @@ class GatsMusic {
             })
             .on('error', err => {
                 wr.setResponse(`'${title}' encountered an error while streaming. skipping.`).setError(err).reply(msg);
+                this.client.user.setPresence({ activity: { name: '', type: '' }});
+                getSafe(() => dispatcher.destroy());
                 this.musicQueue.dequeue();
                 if (!this.musicQueue.isEmpty()) {
                     this._playRecursively();
