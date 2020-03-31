@@ -64,7 +64,6 @@ class WaffleResponse {
     }
 
     setResponse(response) {
-        console.log(typeof response);
         if (typeof response === 'string') {
             return this.setEmbeddedResponse({ description: response });
         }
@@ -93,8 +92,8 @@ class WaffleResponse {
                         `${response.substr(0, this.logResponseLimit)}${this.logResponseLimit < response.length ? `... +${response.length - this.logResponseLimit} more chars` : ''}` :
                         response;
                     const logError = this.error ? `\n__ERR ${this.error}` : '';
-                    logger(`[${now} | ${username}${errorLocale}] ${logMsg}${logResponse}${logError}`);
-                }, null, err => console.error('WR LOG ERROR: ', err));
+                    logger(`[${now} | ${username}${errorLocale}] ${logMsg}${logResponse}${logError}\n`);
+                }, null, err => console.error('WR LOG ERROR: ', err, '\n'));
             }, 100);
         }
         return this;
