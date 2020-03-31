@@ -11,10 +11,13 @@ function decrementMaxMap(map, id) {
     }
 }
 
-function getSafe(fn, defaultVal = null) {
+function getSafe(fn, defaultVal = null, errCallback = null) {
     try {
         return fn();
     } catch (e) {
+        if (errCallback) {
+            errCallback(e);
+        }
         return defaultVal;
     }
 }

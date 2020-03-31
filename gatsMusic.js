@@ -20,7 +20,7 @@ class GatsMusic {
             const { title, videoId } = item.info.player_response.videoDetails
             const { author }  = item.msg;
             return { title, videoId, author };
-        })
+        });
     }
 
     isInVoiceChannel() {

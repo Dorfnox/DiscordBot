@@ -1,4 +1,4 @@
-const { randomFromArray } = require('./WaffleUtil');
+const { getSafe, randomFromArray } = require('./WaffleUtil');
 
 class WaffleResponse {
 
@@ -64,6 +64,7 @@ class WaffleResponse {
     }
 
     setResponse(response) {
+        console.log(typeof response);
         if (typeof response === 'string') {
             return this.setEmbeddedResponse({ description: response });
         }
@@ -82,15 +83,18 @@ class WaffleResponse {
         if (this.isLoggable) {
             const now = new Date().toISOString();
             setTimeout(() => {
-                const logger = this.isError ? console.error : console.log;
-                const username = msg && msg.member ? msg.member.user.username : 'unknownUser';
-                const errorLocale = this.errorLocale ? ` | ${this.errorLocale}` : '';
-                const logError = this.error ? `\n__ERR__ ${this.error}` : '';
-                const response = this.response.embed ? this.response.embed.description | '' : '';
-                const logResponse = this.logResponseLimit > -1 ?
-                    `${response.substr(0, this.logResponseLimit)}${this.logResponseLimit < response.length ? `... +${response.length - this.logResponseLimit} characters` : ''}` :
-                    this.response;
-                logger(`[${now} | ${username}${errorLocale}] ${logResponse}${logError}`);
+                getSafe(() => {
+                    const logger = this.isError ? console.error : console.log;
+                    const username = msg && msg.member ? msg.member.user.username : 'unknownUser';
+                    const errorLocale = this.errorLocale ? ` | ${this.errorLocale}` : '';
+                    const logMsg = `\n__MSG ${msg.content || ''}`;
+                    const response = `\n__RES ${JSON.stringify(this.response.embed || this.response)}`;
+                    const logResponse = this.logResponseLimit > -1 ?
+                        `${response.substr(0, this.logResponseLimit)}${this.logResponseLimit < response.length ? `... +${response.length - this.logResponseLimit} more chars` : ''}` :
+                        response;
+                    const logError = this.error ? `\n__ERR ${this.error}` : '';
+                    logger(`[${now} | ${username}${errorLocale}] ${logMsg}${logResponse}${logError}`);
+                }, null, err => console.error('WR LOG ERROR: ', err));
             }, 100);
         }
         return this;
