@@ -29,7 +29,6 @@ class Pokemon {
         const pokeString = 'The wild pokémon is ';
         const timeToCollect = 10000;
         const filter = m => m.author && m.author.bot && m.author.id == '365975655608745985' && m.content && m.content.startsWith(pokeString);
-        // const filter = m => true;
 
         // Create message collector
         const collector = channel.createMessageCollector(filter, { time: timeToCollect });
