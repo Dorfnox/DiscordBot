@@ -145,6 +145,13 @@ class MessageHandler {
                 description: 'Reveals the currently playing song',
                 helpCategory: this.helpCategory.music,
             },
+            'top': {
+                name: 'Top',
+                execute: this.executeTop,
+                description: 'Returns top clans, best snipers, highest scores,etc... eg: w best snipers',
+                aliases: ['best', 'highest', 'most', 'longest'],
+                helpCategory: this.helpCategory.gats,
+            },
             'top5': {
                 name: 'Top5',
                 execute: this.executeTopFive,
@@ -348,6 +355,10 @@ class MessageHandler {
 
     executeSong(msg) {
         this.gatsMusic.song(msg).then(wr => wr.reply(msg));
+    }
+
+    executeTop(msg, args) {
+        this.gatsScraper.top(args).then(wr => wr.reply(msg));
     }
 
     executeTopFive(msg) {

@@ -14,6 +14,31 @@ class GatsScraper {
   };
   gatsLogoUrl = 'https://stats.gats.io/img/gats_logo.png';
 
+  topArgs = (() => {
+    const argMap = new Map();
+    ['clan', 'clans'].forEach(a => argMap.set(a, () => this._topClans()));
+    ['score', 'scores'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/score`)));
+
+    ['kill', 'kills'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/kills`)));
+    ['kd', 'kds', 'kdr', 'kdratio', 'killdeathratio'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/kdratios`)));
+    ['ks', 'killstreak', 'killstreaks', 'killsstreaks', 'kstreak', 'kstreaks'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/killstreaks`)));
+
+    ['spm', 'scoreperminute'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/scorepermin`)));
+    ['sf', 'shot', 'shots', 'shotfired', 'shotsfired'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/shots`)));
+    ['acc', 'accuracy'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/accuracy`)));
+
+    ['km', 'mi', 'kms', 'miles', 'kilometers', 'kilometres', 'dist', 'distance', 'distancecovered'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/distance`)));
+    ['hrs', 'hrsplayed', 'hours', 'time', 'played', 'timeplayed', 'hoursplayed'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/hours`)));
+
+    ['pistol', 'pistols', 'pistolkill', 'pistolkills', 'withpistol', 'withpistols', 'withpistolkill', 'withpistolkills'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/pistol`)));
+    ['smg', 'smgs', 'smgkill', 'smgkills', 'withsmg', 'withsmgs', 'withsmgkill', 'withsmgkills'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/smg`)));
+    ['shotgun', 'shotguns', 'shotgunkill', 'shotgunkills', 'withshotgun', 'withshotguns', 'withshotgunkill', 'withshotgunkills'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/shotgun`)));
+    ['ass', 'assault', 'assaults', 'assaultkill', 'assaultkills', 'withass', 'withassault', 'withassaults', 'withassaultkill', 'withassaultkills'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/assault`)));
+    ['sniper', 'snipers', 'sniperkill', 'sniperkills', 'withsniper', 'withsnipers', 'withsniperkill', 'withsniperkills'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/sniper`)));
+    ['lmg', 'lmgs', 'lmgkill', 'lmgkills', 'withlmg', 'withlmgs', 'withlmgkill', 'withlmgkills'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/lmg`)));
+    return argMap;
+  })();
+
   clanstats(args) {
     const wr = new WaffleResponse();
     return new Promise(resolve => {
@@ -90,7 +115,7 @@ class GatsScraper {
       this._requestPlayerStatsData(playerName)
         .then(allStats => {
           if (!allStats || !allStats.stats || !allStats.stats[0]) {
-            return resolve(wr.setEmbeddedResponse({ description: `*No stats found for clan* **${playerName}**. Maybe you made a typo?` }));
+            return resolve(wr.setEmbeddedResponse({ description: `*No stats found for player* **${playerName}**. Maybe you made a typo?` }));
           }
           const { stats, favoriteLoadouts } = allStats;
           const title = `Player Stats for ${allStats.name}`;
@@ -105,9 +130,28 @@ class GatsScraper {
         });
     })
     .catch(err => {
-      console.log('ERRROR', err);
       return wr.setResponse('⚠️ Unknown error occurred').setError(err).setIsSendable(false);
     });
+  }
+
+  top(args) {
+    const wr = new WaffleResponse();
+    return new Promise(resolve => {
+      wr.setResponse(`Try something like 'w top clans', or 'w best shotgun'`);
+      if (!args || !args[0]) {
+        return resolve(wr);
+      }
+
+      const topFunc = this.topArgs.get(args.join('').trim().toLowerCase());
+      return resolve(!topFunc ? wr : topFunc());
+    })
+    .catch(err => wr.setResponse('⚠️ Unknown error occurred').setError(err).setIsSendable(false));
+  }
+
+  _loadCheerioData(url) {
+    return axios.get(url)
+      .then(response => response.data)
+      .then(data => cheerio.load(data, { normalizeWhitespace: true }));
   }
 
   _requestClanStatsData(clanName) {
@@ -121,9 +165,7 @@ class GatsScraper {
   }
 
   _requestStatsData(url) {
-    return axios.get(url)
-      .then(response => response.data)
-      .then(data => cheerio.load(data, { normalizeWhitespace: true }))
+    return this._loadCheerioData(url)
       .then(cdata => {
         // Collect proper name
         const name = getSafe(() => cdata('#pageContainer > div:nth-child(1) > div:nth-child(1) > h1').text().trim().split(' ')[0], 'unknown');
@@ -145,6 +187,70 @@ class GatsScraper {
 
         return { url, name, stats, favoriteLoadouts };
       });
+  }
+
+  _requestTopClanStatsData() {
+    const url = `https://stats.gats.io/clans/top`;
+    return this._loadCheerioData(url)
+      .then(cdata => {
+        // Collect Clan Stats
+        const stats = cdata(`#pageContainer > div > div.col-xs-12.col-sm-8.col-md-8 > table > tbody > tr`).map((_, elem) => {
+          const tdElem = cheerio(elem).children('td');
+          const rank = getSafe(() => tdElem[0].children[0].data.trim(), '?');
+          const clanName = getSafe(() => tdElem[1].children[0].data.trim(), 'unknown');
+          const score = getSafe(() => tdElem[4].children[0].data.trim(), 'unknown');
+          return { rank, clanName, score };
+        }).get();
+
+        return { url, stats };
+      });
+  }
+
+  _requestTopPlayerStatsData(url) {
+    return this._loadCheerioData(url)
+      .then(cdata => {
+        // Collect Top / Highest / Longest Stats
+        const stats = cdata(`#pageContainer > div > div.col-xs-12.col-sm-8.col-md-8 > table > tbody > tr`).map((_, elem) => {
+          const rank = getSafe(() => elem.children[1].children[0].data.trim(), '?');
+          const tempNames = getSafe(() => elem.children[3].children[1].children[0].data.trim().split('\n'), 'unknown');
+          const username = getSafe(() => tempNames[tempNames.length - 1], 'unknown');
+          const clanName = getSafe(() => tempNames.length > 1 ? tempNames[0].replace(/[\[\]]+/g, '') : ' ---- ', 'unknown');
+          const score = getSafe(() => elem.children[5].children[0].data.trim(), 'unknown');
+          return { rank, username, clanName, score };
+        }).get();
+
+        return { url, stats };
+      });
+  }
+
+  /* TOP Functions */
+
+  _topClans() {
+    const wr = new WaffleResponse();
+    return this._requestTopClanStatsData()
+      .then(data => {
+        console.log(data);
+        const text = data.stats.map(s => {
+          const rank = s.rank === '1' ? ':crown:' : s.rank;
+          return `${rank} ~ **${s.clanName}** ${s.score}`;
+        }).join('\n');
+        return wr.setResponse(text);
+      })
+      .catch(err => wr.setResponse('⚠️ Unknown error occurred').setError(err));
+  }
+
+  _topPlayers(url) {
+    const wr = new WaffleResponse();
+    const sp = ` ${zeroWidthSpaceChar} `;
+    return this._requestTopPlayerStatsData(url)
+      .then(data => {
+        const text = data.stats.map(s => {
+          const rank = s.rank === '1' ? ':crown:' : s.rank;
+          return `${rank} ~ ${sp}[${s.clanName}] ${sp}**${s.username}** ${sp}${s.score}`;
+        }).join('\n');
+        return wr.setResponse(text);
+      })
+      .catch(err => wr.setResponse('⚠️ Unknown error occurred').setError(err));
   }
 }
 
