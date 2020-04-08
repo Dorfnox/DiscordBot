@@ -16,26 +16,26 @@ class GatsScraper {
 
   topArgs = (() => {
     const argMap = new Map();
-    ['clan', 'clans'].forEach(a => argMap.set(a, () => this._topClans()));
-    ['score', 'scores'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/score`)));
+    ['clan', 'clans'].forEach(a => argMap.set(a, () => this._topClanStats()));
+    ['score', 'scores'].forEach(a => argMap.set(a, () => this._topPlayerStats(`https://stats.gats.io/stat/score`)));
 
-    ['kill', 'kills'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/kills`)));
-    ['kd', 'kds', 'kdr', 'kdratio', 'killdeathratio'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/kdratios`)));
-    ['ks', 'killstreak', 'killstreaks', 'killsstreaks', 'kstreak', 'kstreaks'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/killstreaks`)));
+    ['kill', 'kills'].forEach(a => argMap.set(a, () => this._topPlayerStats(`https://stats.gats.io/stat/kills`)));
+    ['kd', 'kds', 'kdr', 'kdratio', 'killdeathratio'].forEach(a => argMap.set(a, () => this._topPlayerStats(`https://stats.gats.io/stat/kdratios`)));
+    ['ks', 'killstreak', 'killstreaks', 'killsstreaks', 'kstreak', 'kstreaks'].forEach(a => argMap.set(a, () => this._topPlayerStats(`https://stats.gats.io/stat/killstreaks`)));
 
-    ['spm', 'scoreperminute'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/scorepermin`)));
-    ['sf', 'shot', 'shots', 'shotfired', 'shotsfired'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/shots`)));
-    ['acc', 'accuracy'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/accuracy`)));
+    ['spm', 'scoreperminute'].forEach(a => argMap.set(a, () => this._topPlayerStats(`https://stats.gats.io/stat/scorepermin`)));
+    ['sf', 'shot', 'shots', 'shotfired', 'shotsfired'].forEach(a => argMap.set(a, () => this._topPlayerStats(`https://stats.gats.io/stat/shots`)));
+    ['acc', 'accuracy'].forEach(a => argMap.set(a, () => this._topPlayerStats(`https://stats.gats.io/stat/accuracy`)));
 
-    ['km', 'mi', 'kms', 'miles', 'kilometers', 'kilometres', 'dist', 'distance', 'distancecovered'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/distance`)));
-    ['hrs', 'hrsplayed', 'hours', 'time', 'played', 'timeplayed', 'hoursplayed'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/hours`)));
+    ['km', 'mi', 'kms', 'miles', 'kilometers', 'kilometres', 'dist', 'distance', 'distancecovered'].forEach(a => argMap.set(a, () => this._topPlayerStats(`https://stats.gats.io/stat/distance`)));
+    ['hrs', 'hrsplayed', 'hours', 'time', 'played', 'timeplayed', 'hoursplayed'].forEach(a => argMap.set(a, () => this._topPlayerStats(`https://stats.gats.io/stat/hours`)));
 
-    ['pistol', 'pistols', 'pistolkill', 'pistolkills', 'withpistol', 'withpistols', 'withpistolkill', 'withpistolkills'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/pistol`)));
-    ['smg', 'smgs', 'smgkill', 'smgkills', 'withsmg', 'withsmgs', 'withsmgkill', 'withsmgkills'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/smg`)));
-    ['shotgun', 'shotguns', 'shotgunkill', 'shotgunkills', 'withshotgun', 'withshotguns', 'withshotgunkill', 'withshotgunkills'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/shotgun`)));
-    ['ass', 'assault', 'assaults', 'assaultkill', 'assaultkills', 'withass', 'withassault', 'withassaults', 'withassaultkill', 'withassaultkills'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/assault`)));
-    ['sniper', 'snipers', 'sniperkill', 'sniperkills', 'withsniper', 'withsnipers', 'withsniperkill', 'withsniperkills'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/sniper`)));
-    ['lmg', 'lmgs', 'lmgkill', 'lmgkills', 'withlmg', 'withlmgs', 'withlmgkill', 'withlmgkills'].forEach(a => argMap.set(a, () => this._topPlayers(`https://stats.gats.io/stat/lmg`)));
+    ['pistol', 'pistols', 'pistolkill', 'pistolkills', 'withpistol', 'withpistols', 'withpistolkill', 'withpistolkills'].forEach(a => argMap.set(a, () => this._topPlayerStats(`https://stats.gats.io/stat/pistol`)));
+    ['smg', 'smgs', 'smgkill', 'smgkills', 'withsmg', 'withsmgs', 'withsmgkill', 'withsmgkills'].forEach(a => argMap.set(a, () => this._topPlayerStats(`https://stats.gats.io/stat/smg`)));
+    ['shotgun', 'shotguns', 'shotgunkill', 'shotgunkills', 'withshotgun', 'withshotguns', 'withshotgunkill', 'withshotgunkills'].forEach(a => argMap.set(a, () => this._topPlayerStats(`https://stats.gats.io/stat/shotgun`)));
+    ['ass', 'assault', 'assaults', 'assaultkill', 'assaultkills', 'withass', 'withassault', 'withassaults', 'withassaultkill', 'withassaultkills'].forEach(a => argMap.set(a, () => this._topPlayerStats(`https://stats.gats.io/stat/assault`)));
+    ['sniper', 'snipers', 'sniperkill', 'sniperkills', 'withsniper', 'withsnipers', 'withsniperkill', 'withsniperkills'].forEach(a => argMap.set(a, () => this._topPlayerStats(`https://stats.gats.io/stat/sniper`)));
+    ['lmg', 'lmgs', 'lmgkill', 'lmgkills', 'withlmg', 'withlmgs', 'withlmgkill', 'withlmgkills'].forEach(a => argMap.set(a, () => this._topPlayerStats(`https://stats.gats.io/stat/lmg`)));
     return argMap;
   })();
 
@@ -193,6 +193,9 @@ class GatsScraper {
     const url = `https://stats.gats.io/clans/top`;
     return this._loadCheerioData(url)
       .then(cdata => {
+        // Collect Title
+        const title = cdata('#normalMenu a.active').text();
+
         // Collect Clan Stats
         const stats = cdata(`#pageContainer > div > div.col-xs-12.col-sm-8.col-md-8 > table > tbody > tr`).map((_, elem) => {
           const tdElem = cheerio(elem).children('td');
@@ -202,30 +205,34 @@ class GatsScraper {
           return { rank, clanName, score };
         }).get();
 
-        return { url, stats };
+        return { title, url, stats };
       });
   }
 
   _requestTopPlayerStatsData(url) {
     return this._loadCheerioData(url)
       .then(cdata => {
+        // Collect Title
+        const title = cdata('#normalMenu a.active').text();
+
         // Collect Top / Highest / Longest Stats
         const stats = cdata(`#pageContainer > div > div.col-xs-12.col-sm-8.col-md-8 > table > tbody > tr`).map((_, elem) => {
           const rank = getSafe(() => elem.children[1].children[0].data.trim(), '?');
           const tempNames = getSafe(() => elem.children[3].children[1].children[0].data.trim().split('\n'), 'unknown');
           const username = getSafe(() => tempNames[tempNames.length - 1], 'unknown');
-          const clanName = getSafe(() => tempNames.length > 1 ? tempNames[0].replace(/[\[\]]+/g, '') : ' ---- ', 'unknown');
+          const clanName = getSafe(() => tempNames.length > 1 ? tempNames[0].replace(/[\[\]]+/g, '') : '', 'unknown');
+          const hasClan = clanName.length > 0;
           const score = getSafe(() => elem.children[5].children[0].data.trim(), 'unknown');
-          return { rank, username, clanName, score };
+          return { rank, username, clanName, hasClan, score };
         }).get();
 
-        return { url, stats };
+        return { title, url, stats };
       });
   }
 
   /* TOP Functions */
 
-  _topClans() {
+  _topClanStats() {
     const wr = new WaffleResponse();
     return this._requestTopClanStatsData()
       .then(data => {
@@ -234,21 +241,42 @@ class GatsScraper {
           const rank = s.rank === '1' ? ':crown:' : s.rank;
           return `${rank} ~ **${s.clanName}** ${s.score}`;
         }).join('\n');
-        return wr.setResponse(text);
+        return wr.setResponse(text).setLogResponseLimit(40);
       })
       .catch(err => wr.setResponse('⚠️ Unknown error occurred').setError(err));
   }
 
-  _topPlayers(url) {
+  _topPlayerStats(url) {
     const wr = new WaffleResponse();
     const sp = ` ${zeroWidthSpaceChar} `;
     return this._requestTopPlayerStatsData(url)
       .then(data => {
-        const text = data.stats.map(s => {
-          const rank = s.rank === '1' ? ':crown:' : s.rank;
-          return `${rank} ~ ${sp}[${s.clanName}] ${sp}**${s.username}** ${sp}${s.score}`;
-        }).join('\n');
-        return wr.setResponse(text);
+        const { title, stats, url } = data;
+        const f = stats.shift();
+        const description = `*#1*${sp} **${f.score}**\n:crown:${sp} ${f.hasClan ? `[${f.clanName}]` : ''} **${f.username}** \n${sp}`;
+
+        const fieldSet = stats.slice(0, 24);
+        const fields = new Array(fieldSet.length);
+        const columns = 3
+        const rows = Math.ceil(fieldSet.length / columns);
+        const inline = true;
+        let i = 0;
+        for (let x = 0 ; x < columns ; x++) {
+          for (let y = 0 ; y < rows ; y++) {
+            const pos = x + (y * columns);
+            if (pos > fieldSet.length) continue;
+            const z = fieldSet[i++];
+            const name = `*#${z.rank}*${sp} **${z.score}**`;
+            const value = `${z.hasClan ? `[${z.clanName}] ` : ''} **${z.username}**`;
+            fields[pos] = { name, value, inline };
+          }
+        }
+        fields.push({
+          name: zeroWidthSpaceChar,
+          value: `[View these stats online](${url})`,
+          inline: false
+        });
+        return wr.setEmbeddedResponse({ title, description, fields }).setLogResponseLimit(40);
       })
       .catch(err => wr.setResponse('⚠️ Unknown error occurred').setError(err));
   }

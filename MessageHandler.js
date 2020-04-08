@@ -136,7 +136,7 @@ class MessageHandler {
                 name: 'Skip',
                 execute: this.executeSkip,
                 description: 'Stops the current song, or removes from queue (eg: *skip 3*).',
-                aliases: ['stop'],
+                aliases: ['stop', 'remove'],
                 helpCategory: this.helpCategory.music,
             },
             'song': {
