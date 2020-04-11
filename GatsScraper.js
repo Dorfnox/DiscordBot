@@ -1,6 +1,6 @@
 const Nightmare = require('nightmare');
 const WaffleResponse = require('./WaffleResponse');
-const { getSafe, zeroWidthSpaceChar } = require('./WaffleUtil');
+const { dynamicStrSpaceFill, getSafe, zeroWidthSpaceChar } = require('./WaffleUtil');
 const axios = require('axios').default;
 const cheerio = require('cheerio');
 
@@ -17,7 +17,7 @@ class GatsScraper {
   topArgs = (() => {
     const argMap = new Map();
     ['clan', 'clans'].forEach(a => argMap.set(a, () => this._topClanStats()));
-    ['score', 'scores'].forEach(a => argMap.set(a, () => this._topPlayerStats(`https://stats.gats.io/stat/score`)));
+    ['score', 'scores', 'player', 'players'].forEach(a => argMap.set(a, () => this._topPlayerStats(`https://stats.gats.io/stat/score`)));
 
     ['kill', 'kills'].forEach(a => argMap.set(a, () => this._topPlayerStats(`https://stats.gats.io/stat/kills`)));
     ['kd', 'kds', 'kdr', 'kdratio', 'killdeathratio'].forEach(a => argMap.set(a, () => this._topPlayerStats(`https://stats.gats.io/stat/kdratios`)));
@@ -198,11 +198,12 @@ class GatsScraper {
 
         // Collect Clan Stats
         const stats = cdata(`#pageContainer > div > div.col-xs-12.col-sm-8.col-md-8 > table > tbody > tr`).map((_, elem) => {
-          const tdElem = cheerio(elem).children('td');
-          const rank = getSafe(() => tdElem[0].children[0].data.trim(), '?');
-          const clanName = getSafe(() => tdElem[1].children[0].data.trim(), 'unknown');
-          const score = getSafe(() => tdElem[4].children[0].data.trim(), 'unknown');
-          return { rank, clanName, score };
+          const rank = getSafe(() => elem.children[1].children[0].data.trim(), '?');
+          const tag = getSafe(() => elem.children[3].children[0].data.trim(), '?');
+          const clanName = getSafe(() => elem.children[5].children[1].children[0].data.trim(), '?');
+          const members = getSafe(() => elem.children[7].children[0].data.trim(), '?');
+          const score = getSafe(() => elem.children[9].children[0].data.trim(), '?');
+          return { rank, tag, clanName, members, score };
         }).get();
 
         return { title, url, stats };
@@ -234,49 +235,84 @@ class GatsScraper {
 
   _topClanStats() {
     const wr = new WaffleResponse();
+    const sp2 = ` ${zeroWidthSpaceChar} `;
+    const sp3 = ` ${zeroWidthSpaceChar} ${zeroWidthSpaceChar} `;
     return this._requestTopClanStatsData()
       .then(data => {
-        console.log(data);
-        const text = data.stats.map(s => {
-          const rank = s.rank === '1' ? ':crown:' : s.rank;
-          return `${rank} ~ **${s.clanName}** ${s.score}`;
-        }).join('\n');
-        return wr.setResponse(text).setLogResponseLimit(40);
+        const { title, stats, url } = data;
+        
+        // only use 25 results and get longest score length
+        const statsSlice = stats.slice(0, 25);
+        let longestScore = 0;
+        statsSlice.forEach(s => {
+          if (s.score.length > longestScore) {
+            longestScore = s.score.length;
+          }
+        });
+
+        // build thumbnail
+        const thumbnail = {
+          url: this.gatsLogoUrl
+        }
+
+        // build description
+        const description = statsSlice.map(s => {
+            const rankSpace = s.rank > 9 ? ' ' : sp2;
+            const score = dynamicStrSpaceFill(s.score, longestScore);
+            const crown = s.rank === '1' ? `${sp3}:crown:` : '';
+            return `\`#${s.rank}${rankSpace}•${sp2}${score}\`${sp3}[ ${s.tag} ]${sp2}**${s.clanName}**${sp2}${s.members} members${crown}`;
+          }).join('\n');
+
+        // build fields
+        const fields = {
+          name: zeroWidthSpaceChar,
+          value: `[View these stats online](${url})`,
+          inline: false
+        };
+        return wr.setEmbeddedResponse({ title, thumbnail, description, fields }).setLogResponseLimit(40);
       })
       .catch(err => wr.setResponse('⚠️ Unknown error occurred').setError(err));
   }
 
   _topPlayerStats(url) {
     const wr = new WaffleResponse();
-    const sp = ` ${zeroWidthSpaceChar} `;
+    const sp2 = ` ${zeroWidthSpaceChar} `;
+    const sp3 = ` ${zeroWidthSpaceChar} ${zeroWidthSpaceChar} `;
     return this._requestTopPlayerStatsData(url)
       .then(data => {
         const { title, stats, url } = data;
-        const f = stats.shift();
-        const description = `*#1*${sp} **${f.score}**\n:crown:${sp} ${f.hasClan ? `[${f.clanName}]` : ''} **${f.username}** \n${sp}`;
 
-        const fieldSet = stats.slice(0, 24);
-        const fields = new Array(fieldSet.length);
-        const columns = 3
-        const rows = Math.ceil(fieldSet.length / columns);
-        const inline = true;
-        let i = 0;
-        for (let x = 0 ; x < columns ; x++) {
-          for (let y = 0 ; y < rows ; y++) {
-            const pos = x + (y * columns);
-            if (pos > fieldSet.length) continue;
-            const z = fieldSet[i++];
-            const name = `*#${z.rank}*${sp} **${z.score}**`;
-            const value = `${z.hasClan ? `[${z.clanName}] ` : ''} **${z.username}**`;
-            fields[pos] = { name, value, inline };
+        // only use 25 results and get longest score length
+        const statsSlice = stats.slice(0, 25);
+        let longestScore = 0;
+        statsSlice.forEach(s => {
+          if (s.score.length > longestScore) {
+            longestScore = s.score.length;
           }
+        });
+
+        // build thumbnail
+        const thumbnail = {
+          url: this.gatsLogoUrl
         }
-        fields.push({
+
+        // build description
+        const description = statsSlice.map(s => {
+            const rankSpace = s.rank > 9 ? ' ' : sp2;
+            const score = dynamicStrSpaceFill(s.score, longestScore);
+            const clanName = s.hasClan ? `[${s.clanName}]` : '';
+            const crown = s.rank === '1' ? `${sp3}:crown:` : '';
+            const waffle = s.username === 'dorfnox' ? `${sp3}:waffle:` : '';
+            return `\`#${s.rank}${rankSpace}•${sp2}${score}\`${sp3}**${s.username}**${sp2}${clanName}${crown}${waffle}`;
+          }).join('\n');
+
+        // build fields
+        const fields = {
           name: zeroWidthSpaceChar,
           value: `[View these stats online](${url})`,
           inline: false
-        });
-        return wr.setEmbeddedResponse({ title, description, fields }).setLogResponseLimit(40);
+        };
+        return wr.setEmbeddedResponse({ title, thumbnail, description, fields }).setLogResponseLimit(40);
       })
       .catch(err => wr.setResponse('⚠️ Unknown error occurred').setError(err));
   }

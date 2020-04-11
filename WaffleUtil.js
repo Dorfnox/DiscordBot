@@ -11,6 +11,17 @@ function decrementMaxMap(map, id) {
     }
 }
 
+function dynamicStrSpaceFill(str, longestStrLen) {
+    if (str.length < longestStrLen) {
+        let newStr = str;
+        for (let i = 0 ; i < longestStrLen - str.length ; i++) {
+            newStr = newStr.concat(` ${zeroWidthSpaceChar}`);
+        }
+        return newStr;
+    }
+    return str;
+}
+
 function getSafe(fn, defaultVal = null, errCallback = null) {
     try {
         return fn();
@@ -35,6 +46,7 @@ zeroWidthSpaceChar = '\u200b';
 module.exports = {
     arrayFromObjectValues,
     decrementMaxMap,
+    dynamicStrSpaceFill,
     getSafe,
     randomFromArray,
     randomMusicEmoji,
