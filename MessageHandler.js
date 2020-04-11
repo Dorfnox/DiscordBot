@@ -281,7 +281,7 @@ class MessageHandler {
         validChannels[0].join()
             .then(connection => {
                 connection.on('error', err => {
-                    return wr.setResponse(`⚠️ Disconnected to voice channel ${channelToJoin}. Please use 'w j ${channelToJoin}' to attempt a rejoin.`).setError(err).reply(msg);
+                    return wr.setResponse(`⚠️ Connection Error occurred in ${channelToJoin}. You may have to use 'waffle join ${channelToJoin}' to join the voice channel again.`).setError(err).reply(msg);
                 });
                 wr.setResponse(`✅ ~ Successfully connected to channel '${channelToJoin}'!`).reply(msg);
             })

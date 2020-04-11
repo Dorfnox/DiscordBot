@@ -13,7 +13,7 @@ class WaffleResponse {
         this.isLoggable = true;
         this.isSendable = true;
         this.isDirectReply = false;
-        this.logResponseLimit = -1;
+        this.logResponseLimit = 40;
     }
 
     setEmbeddedResponse(options = {}) {
@@ -91,7 +91,7 @@ class WaffleResponse {
                     const logResponse = this.logResponseLimit > -1 ?
                         `${response.substr(0, this.logResponseLimit)}${this.logResponseLimit < response.length ? `... +${response.length - this.logResponseLimit} more chars` : ''}` :
                         response;
-                    const logError = this.error ? `\n__ERR ${this.error}` : '';
+                    const logError = this.error ? `\n__ERR ${JSON.stringify(this.error || '')}` : '';
                     logger(`[${now} | ${username}${errorLocale}] ${logMsg}${logResponse}${logError}\n`);
                 }, null, err => console.error('WR LOG ERROR: ', err, '\n'));
             }, 100);
