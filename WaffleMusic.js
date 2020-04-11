@@ -1,4 +1,4 @@
-const { highWaterMarkBitShift } = require('./discordBotConfig.json').music;
+const { highWaterMarkBitShift } = require('./configWaffleBot.json').music;
 const ytdl = require('ytdl-core');
 const yts = require('yt-search');
 const MusicQueue = require('./MusicQueue');

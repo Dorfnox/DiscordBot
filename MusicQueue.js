@@ -1,5 +1,5 @@
 const WaffleResponse = require('./WaffleResponse');
-const config = require('./discordBotConfig');
+const config = require('./configWaffleBot');
 const { decrementMaxMap } = require('./WaffleUtil');
 
 class MusicQueue {

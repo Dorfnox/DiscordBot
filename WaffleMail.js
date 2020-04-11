@@ -1,6 +1,6 @@
 const WaffleMongo = require('./WaffleMongo');
 const WaffleResponse = require('./WaffleResponse');
-const { modMailChannelCategoryName } = require('./discordBotConfig.json').modMail;
+const { modMailChannelCategoryName } = require('./configWaffleBot.json').modMail;
  
 class WaffleMail {
 

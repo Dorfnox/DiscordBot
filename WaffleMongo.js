@@ -1,4 +1,4 @@
-const { mongoDatabaseName, mongoDBUsername, mongoDBPassword } = require('./discordBotConfig.json').mongoDB;
+const { mongoDatabaseName, mongoDBUsername, mongoDBPassword } = require('./configWaffleBot.json').mongoDB;
 const MongoClient = require('mongodb').MongoClient;
 const { getSafe } = require('./WaffleUtil');
  

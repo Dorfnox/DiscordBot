@@ -1,7 +1,7 @@
-const config = require('./discordBotConfig.json');
+const config = require('./configWaffleBot.json');
 const Discord = require('discord.js');
 const GatsScraper = require('./GatsScraper');
-const GatsMusic = require('./gatsMusic');
+const WaffleMusic = require('./WaffleMusic');
 const Pokemon = require('./Pokemon');
 const WaffleResponse = require('./WaffleResponse');
 const WaffleMail = require('./WaffleMail');
@@ -11,7 +11,7 @@ const { prefixes } = config.chat;
 class MessageHandler {
     constructor(client) {
         this.client = client;
-        this.gatsMusic = new GatsMusic(client);
+        this.gatsMusic = new WaffleMusic(client);
         this.gatsScraper = new GatsScraper();
         this.pokemon = new Pokemon();
         this.waffleMail = new WaffleMail(client);
