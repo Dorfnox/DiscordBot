@@ -14,5 +14,5 @@ discordClient.on('ready', () => {
 .on('message', msg => messageHandler.handleMessage(msg))
 .on('error', err => console.log('DISCORDJS Error: ', err.message));
 
-// discordClient.login(token);
-discordClient.login(testToken);
+discordClient.login(token);
+// discordClient.login(testToken);
