@@ -1,8 +1,10 @@
 const Nightmare = require('nightmare');
-const WaffleResponse = require('./WaffleResponse');
-const { dynamicStrSpaceFill, getSafe, zeroWidthSpaceChar } = require('./WaffleUtil');
 const axios = require('axios').default;
 const cheerio = require('cheerio');
+
+const WaffleResponse = require('../message/WaffleResponse');
+const { dynamicStrSpaceFill, getSafe, zeroWidthSpaceChar } = require('../util/WaffleUtil');
+
 
 class GatsScraper {
   gatsCache = {

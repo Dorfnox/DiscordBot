@@ -1,6 +1,8 @@
-const { mongoDatabaseName, mongoDBUsername, mongoDBPassword } = require('./configWaffleBot.json').mongoDB;
 const MongoClient = require('mongodb').MongoClient;
-const { getSafe } = require('./WaffleUtil');
+
+const { getSafe } = require('../util/WaffleUtil');
+const { mongoDatabaseName, mongoDBUsername, mongoDBPassword } = require('../../configWaffleBot.json').mongoDB;
+
  
 // Wrapper class for performing operations on MongoDB
 class WaffleMongo {

@@ -1,6 +1,6 @@
-const WaffleResponse = require('./WaffleResponse');
-const config = require('./configWaffleBot');
-const { decrementMaxMap } = require('./WaffleUtil');
+const WaffleResponse = require('../message/WaffleResponse');
+const { decrementMaxMap } = require('../util/WaffleUtil');
+const config = require('../../configWaffleBot');
 
 class MusicQueue {
     constructor() {

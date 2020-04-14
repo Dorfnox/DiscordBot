@@ -1,9 +1,10 @@
-const { highWaterMarkBitShift } = require('./configWaffleBot.json').music;
 const ytdl = require('ytdl-core');
 const yts = require('yt-search');
+
 const MusicQueue = require('./MusicQueue');
-const WaffleResponse = require('./WaffleResponse');
-const { getSafe, randomMusicEmoji, zeroWidthSpaceChar } = require('./WaffleUtil');
+const WaffleResponse = require('../message/WaffleResponse');
+const { getSafe, randomMusicEmoji, zeroWidthSpaceChar } = require('../util/WaffleUtil');
+const { highWaterMarkBitShift } = require('../../configWaffleBot.json').music;
 
 class GatsMusic {
     constructor(client) {

@@ -1,12 +1,13 @@
-const config = require('./configWaffleBot.json');
 const Discord = require('discord.js');
-const GatsScraper = require('./GatsScraper');
-const WaffleMusic = require('./WaffleMusic');
-const Pokemon = require('./Pokemon');
+
+const GatsScraper = require('../gats/GatsScraper');
+const WaffleMusic = require('../music/WaffleMusic');
+const Pokemon = require('../pokemon/Pokemon');
+const WaffleMail = require('../mail/WaffleMail');
 const WaffleResponse = require('./WaffleResponse');
-const WaffleMail = require('./WaffleMail');
-const { arrayFromObjectValues, randomFromArray } = require('./WaffleUtil');
-const { prefixes } = config.chat;
+const { arrayFromObjectValues, randomFromArray } = require('../util/WaffleUtil');
+const { prefixes } = require('../../configWaffleBot.json').chat;
+
 
 class MessageHandler {
     constructor(client) {

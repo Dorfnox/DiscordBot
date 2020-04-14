@@ -1,4 +1,4 @@
-const { getSafe, randomFromArray } = require('./WaffleUtil');
+const { getSafe, randomFromArray } = require('../util/WaffleUtil');
 
 class WaffleResponse {
 

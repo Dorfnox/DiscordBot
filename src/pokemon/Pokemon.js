@@ -1,5 +1,7 @@
 const axios = require('axios').default;
-const WaffleResponse = require('./WaffleResponse');
+
+const WaffleResponse = require('../message/WaffleResponse');
+
 
 class Pokemon {
     constructor(client) {
