@@ -84,9 +84,9 @@ class WaffleResponse {
             setTimeout(() => {
                 getSafe(() => {
                     const logger = this.isError ? console.error : console.log;
-                    const username = msg && msg.member ? msg.member.user.username : 'unknownUser';
+                    const username = getSafe(() => msg.member.user.username, 'unknownUser');
                     const errorLocale = this.errorLocale ? ` | ${this.errorLocale}` : '';
-                    const logMsg = `\n__MSG ${msg.content || ''}`;
+                    const logMsg = `\n__MSG ${getSafe(() => msg.content || '', '')}`;
                     const response = `\n__RES ${JSON.stringify(this.response.embed || this.response)}`;
                     const logResponse = this.logResponseLimit > -1 ?
                         `${response.substr(0, this.logResponseLimit)}${this.logResponseLimit < response.length ? `... +${response.length - this.logResponseLimit} more chars` : ''}` :

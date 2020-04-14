@@ -3,7 +3,7 @@ const yts = require('yt-search');
 
 const MusicQueue = require('./MusicQueue');
 const WaffleResponse = require('../message/WaffleResponse');
-const { getSafe, randomMusicEmoji, zeroWidthSpaceChar } = require('../util/WaffleUtil');
+const { getSafe, randomMusicEmoji, retry, zeroWidthSpaceChar } = require('../util/WaffleUtil');
 const { highWaterMarkBitShift } = require('../../configWaffleBot.json').music;
 
 class GatsMusic {
@@ -253,22 +253,25 @@ class GatsMusic {
     _getYTInfoViaString(args) {
         const argString = args.join(' ');
         const options = { query: argString, pageStart: 1, pageEnd: 1 };
-        const wr = new WaffleResponse();
-        return yts(options)
-            .then(res => {
-                const videos = res.videos || [];
+        const searchFunc = () => yts(options)
+            .then(res => getSafe(() => res.videos || [], []))
+            .then(videos => {
+                if (!videos || !videos[0]) {
+                    console.error(`__E: No videos found... retrying`);
+                    throw new Error('no videos found');
+                }
+                return videos;
+            });
+        return retry(searchFunc, 3)
+            .then(videos => {
                 const filteredVideos = videos.filter(video => {
                     // Ignore Youtube Movies Hardcode
                     return video.author.id !== 'UClgRkhTL3_hImCAmdLfDE4g';
                 });
-                const video = filteredVideos[0];
-                if (!video) {
-                    return wr.setResponse(`Coulld not find any results for '${argString}'. Try editing your search.`).setIsError(true);
-                }
-                return this._getYTInfoViaLink(video.url);
+                return this._getYTInfoViaLink(filteredVideos[0].url);
             })
             .catch(err => {
-                return wr.setResponse(`Failed to perfom find for '${argString}'. Please try again.`).setError(err);
+                return new WaffleResponse().setResponse(`Could not find any results for '${argString}'. Try editing your search.`).setError(err);
             });
     }
 

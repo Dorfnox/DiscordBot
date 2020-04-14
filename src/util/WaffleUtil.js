@@ -41,6 +41,15 @@ function randomMusicEmoji() {
     return randomFromArray([...'🎸🎹🎺🎻🎼🎷🥁🎧🎤']);
 }
 
+function retry(fn, retries=3, err=null) {
+    if (!retries) {
+      return Promise.reject(err);
+    }
+    return fn().catch(err => {
+        return retry(fn, retries - 1, err);
+      });
+  }
+
 zeroWidthSpaceChar = '\u200b';
 
 module.exports = {
@@ -50,5 +59,6 @@ module.exports = {
     getSafe,
     randomFromArray,
     randomMusicEmoji,
+    retry,
     zeroWidthSpaceChar
 }
