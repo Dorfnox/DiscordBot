@@ -363,14 +363,7 @@ class MessageHandler {
     }
 
     executeTopFive(msg) {
-        this.gatsScraper.getTopFive()
-            .then(wr => {
-                const fields = wr.response.map(p => { return { name: `**${p.points}**`, value: `#${p.position}   **${p.player}**` }});
-                wr.setEmbeddedResponse({ fields }).reply(msg);
-            })
-            .catch(wr => {
-                wr.reply(msg);
-            });
+        this.gatsScraper.getTopFive().then(wr => wr.reply(msg));
     }
 
     executeUnpause(msg) {
