@@ -10,6 +10,9 @@
             "🧇"
         ]
     },
+    "gats": {
+        "topFiveCacheLongevityInSeconds": 120
+    },
     "modMail": {
         "modMailChannelCategoryName": "WaffleMail"
     },
