@@ -128,7 +128,7 @@ class GatsScraper {
     return GatsRequests.requestTopClanStatsData()
       .then(data => {
         const { title, stats, url } = data;
-        
+
         // only use 25 results and get longest score length
         const statsSlice = stats.slice(0, 25);
         let longestScore = 0;
@@ -148,7 +148,7 @@ class GatsScraper {
             const rankSpace = s.rank > 9 ? ' ' : sp2;
             const score = dynamicStrSpaceFill(s.score, longestScore);
             const crown = s.rank === '1' ? `${sp3}:crown:` : '';
-            return `\`#${s.rank}${rankSpace}•${sp2}${score}\`${sp3}[ ${s.tag} ]${sp2}**${s.clanName}**${sp2}${s.members} members${crown}`;
+            return `\`#${s.rank}${rankSpace}•${sp2}${score}\`${sp3}**${s.clanName}**${sp2}[${s.tag}]${sp2}*${s.members} members*${crown}`;
           }).join('\n');
 
         // build fields
