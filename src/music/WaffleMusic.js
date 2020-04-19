@@ -28,6 +28,37 @@ class GatsMusic {
         return this.client.voice && this.client.voice.connections.first();
     }
 
+    join(msg, args) {
+        const wr = new WaffleResponse();
+        if (!args || !args[0]) {
+            return wr.setResponse('Please provide a valid voice channel name').reply(msg);
+        }
+        const channelToJoin = args[0];
+        const validChannels = [];
+        // Find voice channel to join
+        msg.guild.channels.cache. forEach((channel, id) => {
+            if (channel.type === 'voice' && channel.name === channelToJoin) {
+                validChannels.push(channel);
+            }
+        });
+        if (!validChannels || !validChannels[0]) {
+            return wr.setResponse('Please provide an accurate voice channel name').reply(msg);
+        }
+
+        const dispatcher = this._getDispatcher();
+        if (dispatcher && dispatcher.paused) {
+            return wr.setResponse('Please Unpause me to join another channel (:waffle: unpause)').reply(msg);
+        }
+        validChannels[0].join()
+            .then(connection => {
+                connection.on('error', err => {
+                    return wr.setResponse(`⚠️ Connection Error occurred in ${channelToJoin}. You may have to use 'waffle join ${channelToJoin}' to join the voice channel again.`).setError(err).reply(msg);
+                });
+                wr.setResponse(`✅ ~ Successfully connected to channel '${channelToJoin}'!`).reply(msg);
+            })
+            .catch(err => wr.setResponse(`🚫 ~ Failed to connect to channel '${channelToJoin}'`).setError(err).reply(msg));
+    }
+
     pause(msg) {
         return new Promise(resolve => {
             let wr = this._verifyInVoiceChannel(msg);
@@ -338,8 +369,8 @@ class GatsMusic {
                 const embeddedMessage = this._getEmbeddedQueueMessage(false);
                 wr.setEmbeddedResponse(embeddedMessage).reply(msg);
                 this.client.user.setPresence({ activity: { name: `${title} 🎧`, type: 'PLAYING', url: ytLink }});
-            })
-            .on('finish', () => {
+            });
+        dispatcher.on('finish', () => {
                 wr.setResponse(`**${title}** has finished playing`).setIsSendable(false).reply(msg);
                 this.client.user.setPresence({ activity: { name: '', type: '' }});
                 getSafe(() => dispatcher.destroy());
@@ -347,8 +378,8 @@ class GatsMusic {
                 if (!this.musicQueue.isEmpty()) {
                     this._playRecursively();
                 }
-            })
-            .on('error', err => {
+            });
+        dispatcher.on('error', err => {
                 wr.setResponse(`'${title}' encountered an error while streaming. skipping.`).setError(err).reply(msg);
                 this.client.user.setPresence({ activity: { name: '', type: '' }});
                 getSafe(() => dispatcher.destroy());
@@ -357,6 +388,7 @@ class GatsMusic {
                     this._playRecursively();
                 }
             });
+        // dispatcher.on('debug');
         dispatcher.setVolumeLogarithmic(0.5);
     }
 

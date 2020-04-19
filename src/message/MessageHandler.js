@@ -1,6 +1,7 @@
 const Discord = require('discord.js');
 
 const GatsScraper = require('../gats/GatsScraper');
+const GenericResponse = require('../message/GenericResponse');
 const WaffleMusic = require('../music/WaffleMusic');
 const Pokemon = require('../pokemon/Pokemon');
 const WaffleMail = require('../mail/WaffleMail');
@@ -12,6 +13,7 @@ const { prefixes } = require('../../configWaffleBot.json').chat;
 class MessageHandler {
     constructor(client) {
         this.client = client;
+        this.genericResponse = new GenericResponse();
         this.gatsMusic = new WaffleMusic(client);
         this.gatsScraper = new GatsScraper();
         this.pokemon = new Pokemon();
@@ -149,7 +151,7 @@ class MessageHandler {
             'top': {
                 name: 'Top',
                 execute: this.executeTop,
-                description: 'Returns top clans, best snipers, highest scores,etc... eg: w best snipers',
+                description: 'Returns top clans, best snipers, highest scores, etc... eg: w best snipers',
                 aliases: ['best', 'highest', 'most', 'longest'],
                 helpCategory: this.helpCategory.gats,
             },
@@ -226,7 +228,7 @@ class MessageHandler {
     }
 
     executeFeed(msg) {
-        new WaffleResponse().setResponse('OMNOMOMNOMOMNOM').reply(msg);
+        this.genericResponse.feed(msg);
     }
 
     executeHelp(msg, args) {
@@ -253,44 +255,15 @@ class MessageHandler {
     }
 
     executeHow(msg, args) {
-        if (args.join(' ').toLowerCase().startsWith('old is ken')) {
-            new WaffleResponse().setResponse('Kendron is a baby boi!').reply(msg);
-        }
+        this.genericResponse.how(msg, args);
     }
 
     executeJoin(msg, args) {
-        const wr = new WaffleResponse();
-        if (!args || !args[0]) {
-            return wr.setResponse('Please provide a valid voice channel name').reply(msg);
-        }
-        const channelToJoin = args[0];
-        const validChannels = [];
-        // Find voice channel to join
-        msg.guild.channels.cache.forEach((channel, id) => {
-            if (channel.type === 'voice' && channel.name === channelToJoin) {
-                validChannels.push(channel);
-            }
-        });
-        if (!validChannels || !validChannels[0]) {
-            return wr.setResponse('Please provide an accurate voice channel name').reply(msg);
-        }
-
-        const dispatcher = this.gatsMusic._getDispatcher();
-        if (dispatcher && dispatcher.paused) {
-            return wr.setResponse('Please Unpause me to join another channel (:waffle: unpause)').reply(msg);
-        }
-        validChannels[0].join()
-            .then(connection => {
-                connection.on('error', err => {
-                    return wr.setResponse(`⚠️ Connection Error occurred in ${channelToJoin}. You may have to use 'waffle join ${channelToJoin}' to join the voice channel again.`).setError(err).reply(msg);
-                });
-                wr.setResponse(`✅ ~ Successfully connected to channel '${channelToJoin}'!`).reply(msg);
-            })
-            .catch(err => wr.setResponse(`🚫 ~ Failed to connect to channel '${channelToJoin}'`).setError(err).reply(msg));
+        this.gatsMusic.join(msg, args).then(wr => wr.reply(msg));
     }
 
     executeNani(msg) {
-        new WaffleResponse().setResponse("*Nani the fuck did you just fucking iimasu about watashi, you chiisai bitch desuka? Watashi'll have anata know that watashi graduated top of my class in Nihongo 3, and watashi've been involved in iroirona Nihongo tutoring sessions, and watashi have over sanbyaku perfect test scores. Watashi am trained in kanji, and watashi is the top letter writer in all of southern California. Anata are nothing to watashi but just another weeaboo. Watashi will korosu anata the fuck out with vocabulary the likes of which has neber meen mimasu'd before on this continent, mark watashino fucking words. Anata thinks that anata can get away with hanashimasing that kuso to watashi over the intaaneto? Omou again, fucker. As we hanashimasu, watashi am contacting watashino secret netto of otakus accross the USA, and anatano IP is being traced right now so you better junbishimasu for the ame, ujimushi. The ame that korosu's the pathetic chiisai thing anata calls anatano life. You're fucking shinimashita'd, akachan.*").setLogResponseLimit(30).reply(msg);
+        this.genericResponse.nani(msg);
     }
 
     executeOops(msg) {
@@ -322,32 +295,11 @@ class MessageHandler {
     }
 
     executeSalt(msg) {
-        const saltReplies = [
-            `:salt:`,
-            `WHY ARE YOU BEING SO SALTY`,
-            `https://www.youtube.com/watch?v=qDjPCMs7ivU`,
-            `https://www.youtube.com/watch?v=xzpndHtdl9A`,
-            `http://files.explosm.net/comics/Rob/soup.png`,
-            `https://www.amazon.com/Morton-Salt-Regular-26/dp/B0005ZV1CQ`,
-            `https://live.staticflickr.com/3953/15738368411_266702863c_b.jpg`,
-            `https://ih0.redbubble.net/image.500606301.2517/raf,750x1000,075,t,fafafa:ca443f4786.u1.jpg`,
-        ];
-        const saltReply = randomFromArray(saltReplies);
-        if (saltReply === `https://www.youtube.com/watch?v=qDjPCMs7ivU` && this.gatsMusic.isInVoiceChannel()) {
-            this.gatsMusic.play(msg, [saltReply], { skipUserValidation: true });
-        } else {
-           msg.channel.send(saltReply);
-        }
+        this.genericResponse.salt(msg);
     }
 
     executeSay(msg, args) {
-        let text;
-        if (Math.random() > 0.14) {
-            text = !args.length ? 'Can\'t repeat what isn\'t said, you naughty, naughty person' : args.join(' ');
-        } else  {
-            text = 'Sorry, I\'m not saying that... I don’t speak bullshit.'
-        }
-        new WaffleResponse().setResponse(text).reply(msg);
+        this.genericResponse.say(msg, args);
     }
 
     executeSkip(msg, args) {
