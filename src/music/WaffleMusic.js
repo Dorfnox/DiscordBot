@@ -6,7 +6,7 @@ const WaffleResponse = require('../message/WaffleResponse');
 const { getSafe, randomMusicEmoji, retry, zeroWidthSpaceChar } = require('../util/WaffleUtil');
 const { highWaterMarkBitShift } = require('../../configWaffleBot.json').music;
 
-class GatsMusic {
+class WaffleMusic {
     constructor(client) {
         this.musicQueue = new MusicQueue();
         this.client = client;
@@ -53,6 +53,11 @@ class GatsMusic {
             .then(connection => {
                 connection.on('error', err => {
                     return wr.setResponse(`⚠️ Connection Error occurred in ${channelToJoin}. You may have to use 'waffle join ${channelToJoin}' to join the voice channel again.`).setError(err).reply(msg);
+                });
+                connection.on('debug', d => {
+                    if (getSafe(() => !d.startsWith("[WS] >> {\"op\":3,\"d\"") && !d.startsWith("[WS] << {\"op\":6,\"d\""), true)) {
+                        console.log('VOICE_CONNECTION_DEBUG: ', d);
+                    }
                 });
                 wr.setResponse(`✅ ~ Successfully connected to channel '${channelToJoin}'!`).reply(msg);
             })
@@ -363,17 +368,24 @@ class GatsMusic {
             const dispatcher = this._getDispatcher();
             if (dispatcher) dispatcher.end();
         });
+        readableStream.on('debug', d => {
+            console.log('READABLE_STREAM_DEBUG: ', d);
+        });
+        readableStream.on('close', c => {
+            console.log('READABLE_STREAM_CLOSE: ', c);
+        });
 
         const dispatcher = connection.play(readableStream, { highWaterMark: 1 })
-        dispatcher.on('start', () => {
+        dispatcher.on('start', s => {
                 const embeddedMessage = this._getEmbeddedQueueMessage(false);
+                console.log('DISPATCHER_START: ', s);
                 wr.setEmbeddedResponse(embeddedMessage).reply(msg);
                 this.client.user.setPresence({ activity: { name: `${title} 🎧`, type: 'PLAYING', url: ytLink }});
             });
-        dispatcher.on('finish', () => {
+        dispatcher.on('finish', f => {
                 wr.setResponse(`**${title}** has finished playing`).setIsSendable(false).reply(msg);
                 this.client.user.setPresence({ activity: { name: '', type: '' }});
-                getSafe(() => dispatcher.destroy());
+                console.log('DISPATCHER_FINISH: ', f);
                 this.musicQueue.dequeue();
                 if (!this.musicQueue.isEmpty()) {
                     this._playRecursively();
@@ -382,14 +394,18 @@ class GatsMusic {
         dispatcher.on('error', err => {
                 wr.setResponse(`'${title}' encountered an error while streaming. skipping.`).setError(err).reply(msg);
                 this.client.user.setPresence({ activity: { name: '', type: '' }});
-                getSafe(() => dispatcher.destroy());
+                console.log('DISPATCHER_ERROR: ', err);
                 this.musicQueue.dequeue();
                 if (!this.musicQueue.isEmpty()) {
                     this._playRecursively();
                 }
             });
-        // dispatcher.on('debug');
-        dispatcher.setVolumeLogarithmic(0.5);
+        dispatcher.on('debug', d => {
+            console.log('DISPATCHER_DEBUG: ', d);
+        });
+        dispatcher.on('close', c => {
+            console.log('DISPATCHER_CLOSE: ', c);
+        });
     }
 
     _unpause() {
@@ -459,4 +475,4 @@ class GatsMusic {
     }
 }
 
-module.exports = GatsMusic;
+module.exports = WaffleMusic;

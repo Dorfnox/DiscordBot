@@ -5,6 +5,7 @@ const GenericResponse = require('../message/GenericResponse');
 const WaffleMusic = require('../music/WaffleMusic');
 const Pokemon = require('../pokemon/Pokemon');
 const WaffleMail = require('../mail/WaffleMail');
+const OwnerCommands = require('../owner/OwnerCommands');
 const WaffleResponse = require('./WaffleResponse');
 const { arrayFromObjectValues, randomFromArray } = require('../util/WaffleUtil');
 const { prefixes } = require('../../configWaffleBot.json').chat;
@@ -14,10 +15,11 @@ class MessageHandler {
     constructor(client) {
         this.client = client;
         this.genericResponse = new GenericResponse();
-        this.gatsMusic = new WaffleMusic(client);
+        this.waffleMusic = new WaffleMusic(client);
         this.gatsScraper = new GatsScraper();
         this.pokemon = new Pokemon();
         this.waffleMail = new WaffleMail(client);
+        this.ownerCommands = new OwnerCommands(client);
         this.helpCategory = {
             gats: {
                 name: 'Gats',
@@ -34,6 +36,10 @@ class MessageHandler {
             pokemon: {
                 name: 'Pokemon',
                 description: 'Interacts with Pokecord!'
+            },
+            owner: {
+                name: 'Owner',
+                description: 'A list of commands only the owner of the bot can use. Right now, just **Dorfnox** :waffle:'
             }
         }
         this.commands = {
@@ -46,7 +52,7 @@ class MessageHandler {
             },
             'feed': {
                 name: 'Feed',
-                execute: this.executeFeed,
+                execute: (msg) => this.genericResponse.feed(msg),
                 description: 'Give wfl waffles!',
                 helpCategory: this.helpCategory.general,
             },
@@ -59,7 +65,7 @@ class MessageHandler {
             },
             'how': {
                 name: 'How',
-                execute: this.executeHow,
+                execute: (msg, args) => this.genericResponse.how(msg, args),
                 description: 'Try \'how old is kendron\' to find out Kendron\'s age!',
                 helpCategory: this.helpCategory.general,
             },
@@ -72,7 +78,7 @@ class MessageHandler {
             },
             'nani': {
                 name: 'Nani',
-                execute: this.executeNani,
+                execute: (msg) => this.genericResponse.nani(msg),
                 description: 'UwU notice me senpai.',
                 helpCategory: this.helpCategory.general,
             },
@@ -95,11 +101,16 @@ class MessageHandler {
                 description: 'Displays the stats of a player (eg: w playerstats dorfnox).',
                 aliases: ['ps'],
                 helpCategory: this.helpCategory.gats,
-
+            },
+            'ping': {
+                name: 'Ping',
+                execute: (msg) => this.genericResponse.ping(msg),
+                description: 'Shows the ping in ms between client -> server.',
+                helpCategory: this.helpCategory.general,
             },
             'p!hint': {
                 name: 'p!hint',
-                execute: this.executePokeHint,
+                execute: (msg) => this.pokemon.processNextPokeBotMessage(msg),
                 description: `Run 'w p!hint' before running 'p!hint' for a little ***more*** help.`,
                 helpCategory: this.helpCategory.pokemon,
             },
@@ -125,15 +136,22 @@ class MessageHandler {
             },
             'salt': {
                 name: 'Salt',
-                execute: this.executeSalt,
+                execute: (msg) => this.genericResponse.salt(msg),
                 description: 'Just why?',
                 helpCategory: this.helpCategory.general,
             },
             'say': {
                 name: 'Say',
-                execute: this.executeSay,
+                execute: (msg, args) => this.genericResponse.say(msg, args),
                 description: 'I will repeat what you say :D',
                 helpCategory: this.helpCategory.general,
+            },
+            'setstatus': {
+                name: 'SetStatus',
+                execute: (msg, args) => this.ownerCommands.setStatus(msg, args),
+                description: 'Sets the status of the bot, globally',
+                aliases: ['ss'],
+                helpCategory: this.helpCategory.owner,
             },
             'skip': {
                 name: 'Skip',
@@ -227,10 +245,6 @@ class MessageHandler {
         this.gatsScraper.clanstats(args).then(wr => wr.reply(msg));
     }
 
-    executeFeed(msg) {
-        this.genericResponse.feed(msg);
-    }
-
     executeHelp(msg, args) {
         const wr = new WaffleResponse();
         const helpCategoriesArray = arrayFromObjectValues(this.helpCategory);
@@ -254,60 +268,40 @@ class MessageHandler {
         wr.setEmbeddedResponse({ title, description }).reply(msg);
     }
 
-    executeHow(msg, args) {
-        this.genericResponse.how(msg, args);
-    }
-
     executeJoin(msg, args) {
-        this.gatsMusic.join(msg, args).then(wr => wr.reply(msg));
-    }
-
-    executeNani(msg) {
-        this.genericResponse.nani(msg);
+        this.waffleMusic.join(msg, args);
     }
 
     executeOops(msg) {
-        this.gatsMusic.removeLast(msg).then(wr => wr.reply(msg));
+        this.waffleMusic.removeLast(msg).then(wr => wr.reply(msg));
     }
 
     executePause(msg) {
-        this.gatsMusic.pause(msg).then(wr => wr.reply(msg));
+        this.waffleMusic.pause(msg).then(wr => wr.reply(msg));
     }
 
     executePlay(msg, args) {
-        this.gatsMusic.play(msg, args).then(wr => wr.reply(msg));
+        this.waffleMusic.play(msg, args).then(wr => wr.reply(msg));
     }
 
     executePlayerstats(msg, args) {
         this.gatsScraper.playerstats(args).then(wr => wr.reply(msg));
     }
 
-    executePokeHint(msg) {
-        this.pokemon.processNextPokeBotMessage(msg);
-    }
-
     executeQueue(msg) {
-        this.gatsMusic.queue(msg).then(wr => wr.reply(msg));
+        this.waffleMusic.queue(msg).then(wr => wr.reply(msg));
     }
 
     executeRepeat(msg) {
-        this.gatsMusic.repeat(msg).then(wr => wr.reply(msg));
-    }
-
-    executeSalt(msg) {
-        this.genericResponse.salt(msg);
-    }
-
-    executeSay(msg, args) {
-        this.genericResponse.say(msg, args);
+        this.waffleMusic.repeat(msg).then(wr => wr.reply(msg));
     }
 
     executeSkip(msg, args) {
-        this.gatsMusic.skip(msg, Math.max(parseInt(args[0], 10) || 0, 0)).then(wr => wr.reply(msg));
+        this.waffleMusic.skip(msg, Math.max(parseInt(args[0], 10) || 0, 0)).then(wr => wr.reply(msg));
     }
 
     executeSong(msg) {
-        this.gatsMusic.song(msg).then(wr => wr.reply(msg));
+        this.waffleMusic.song(msg).then(wr => wr.reply(msg));
     }
 
     executeTop(msg, args) {
@@ -319,7 +313,7 @@ class MessageHandler {
     }
 
     executeUnpause(msg) {
-        this.gatsMusic.unpause(msg).then(wr => wr.reply(msg));
+        this.waffleMusic.unpause(msg).then(wr => wr.reply(msg));
     }
 }
 

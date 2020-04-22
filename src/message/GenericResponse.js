@@ -18,6 +18,10 @@ class GenericResponse {
     new WaffleResponse().setResponse("*Nani the fuck did you just fucking iimasu about watashi, you chiisai bitch desuka? Watashi'll have anata know that watashi graduated top of my class in Nihongo 3, and watashi've been involved in iroirona Nihongo tutoring sessions, and watashi have over sanbyaku perfect test scores. Watashi am trained in kanji, and watashi is the top letter writer in all of southern California. Anata are nothing to watashi but just another weeaboo. Watashi will korosu anata the fuck out with vocabulary the likes of which has neber meen mimasu'd before on this continent, mark watashino fucking words. Anata thinks that anata can get away with hanashimasing that kuso to watashi over the intaaneto? Omou again, fucker. As we hanashimasu, watashi am contacting watashino secret netto of otakus accross the USA, and anatano IP is being traced right now so you better junbishimasu for the ame, ujimushi. The ame that korosu's the pathetic chiisai thing anata calls anatano life. You're fucking shinimashita'd, akachan.*").setLogResponseLimit(30).reply(msg);
   }
 
+  ping(msg) {
+    new WaffleResponse().setResponse(`PONG! Your ping is **${Date.now() - msg.createdAt.getTime()}ms**`).reply(msg);
+  }
+
   salt(msg) {
     const saltReplies = [
       `:salt:`,
@@ -41,8 +45,6 @@ class GenericResponse {
     }
     new WaffleResponse().setResponse(text).reply(msg);
   }
-
-
 }
 
 module.exports = GenericResponse;
