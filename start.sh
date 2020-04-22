@@ -12,7 +12,7 @@ then
 	xvfb-run -a node .
 elif [ "$1" == "async" ]
 then
-	nohup xvfb-run -a node . &
+	nohup xvfb-run -a node . &!
 else
 	echo "unknown command"
 fi
