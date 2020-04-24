@@ -88,9 +88,9 @@ class GatsScraper {
           if (!allStats || !allStats.stats || !allStats.stats[0]) {
             return resolve(wr.setEmbeddedResponse({ description: `*No stats found for player* **${playerName}**. Maybe you made a typo?` }));
           }
-          const { stats, favoriteLoadouts } = allStats;
+          const { stats, favoriteLoadouts, vip } = allStats;
           const title = `Player Stats for ${allStats.name}`;
-          const description = stats.map(s => `**${s.stat}:** ${s.value}`).join('\n');
+          const description = `${vip.isVip ? `:medal: *VIP member since ${vip.since}* :medal:\n\n` : ''}`.concat(stats.map(s => `**${s.stat}:** ${s.value}`).join('\n'));
           const thumbnail = { url: favoriteLoadouts[0].imageUrl };
           const fields = [
             { name: zeroWidthSpaceChar, value: '***Favorite Loadouts***'},

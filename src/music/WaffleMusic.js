@@ -30,9 +30,11 @@ class WaffleMusic {
 
     join(msg, args) {
         const wr = new WaffleResponse();
+        return wr.setResponse("Apologies, this command has been taken temporarily offline due to :waffle: **Dorfnox** :waffle: being too lazy to fix it.").reply(msg);
         if (!args || !args[0]) {
             return wr.setResponse('Please provide a valid voice channel name').reply(msg);
         }
+        
         const channelToJoin = args[0];
         const validChannels = [];
         // Find voice channel to join
@@ -66,6 +68,7 @@ class WaffleMusic {
 
     pause(msg) {
         return new Promise(resolve => {
+            return resolve(new WaffleResponse().setResponse("Apologies, this command has been taken temporarily offline due to :waffle: **Dorfnox** :waffle: being too lazy to fix it."));
             let wr = this._verifyInVoiceChannel(msg);
             if (wr.isError) return resolve(wr);
 
@@ -83,6 +86,7 @@ class WaffleMusic {
             options = Object.assign({
                 skipUserValidation: false,
             }, options);
+            return resolve(new WaffleResponse().setResponse("Apologies, this command has been taken temporarily offline due to :waffle: **Dorfnox** :waffle: being too lazy to fix it."));
 
             let wr = this._verifyInVoiceChannel(msg, options);
             if (wr.isError) return resolve(wr);
@@ -108,6 +112,7 @@ class WaffleMusic {
 
     queue(msg) {
         return new Promise(resolve => {
+            return resolve(new WaffleResponse().setResponse("Apologies, this command has been taken temporarily offline due to :waffle: **Dorfnox** :waffle: being too lazy to fix it."));
             const wr = this._verifyQueueIsNotEmpty();
             if (wr.isError) return resolve(wr);
 
@@ -122,6 +127,7 @@ class WaffleMusic {
     removeLast(msg) {
         const wr = new WaffleResponse();
         return new Promise(resolve => {
+            return resolve(new WaffleResponse().setResponse("Apologies, this command has been taken temporarily offline due to :waffle: **Dorfnox** :waffle: being too lazy to fix it."));
             const { id } = msg.member;
             let queuePosition = -1;
             const queue = this.musicQueue.getQueue();
@@ -144,6 +150,7 @@ class WaffleMusic {
 
     repeat(msg) {
         return new Promise(resolve => {
+            return resolve(new WaffleResponse().setResponse("Apologies, this command has been taken temporarily offline due to :waffle: **Dorfnox** :waffle: being too lazy to fix it."))
             let wr = this._verifyInVoiceChannel(msg);
             if (wr.isError) return resolve(wr);
 
@@ -159,6 +166,7 @@ class WaffleMusic {
 
     skip(msg, queuePosition = 0) {
         return new Promise(resolve => {
+            return resolve(new WaffleResponse().setResponse("Apologies, this command has been taken temporarily offline due to :waffle: **Dorfnox** :waffle: being too lazy to fix it."));
             let wr = this._verifyInVoiceChannel(msg);
             if (wr.isError) return resolve(wr);
 
@@ -190,6 +198,7 @@ class WaffleMusic {
 
     song(msg) {
         return new Promise(resolve => {
+            return resolve(new WaffleResponse().setResponse("Apologies, this command has been taken temporarily offline due to :waffle: **Dorfnox** :waffle: being too lazy to fix it."));
             let wr = this._verifyQueueIsNotEmpty();
             if (wr.isError) return resolve(wr);
 
@@ -202,6 +211,7 @@ class WaffleMusic {
 
     unpause(msg) {
         return new Promise(resolve => {
+            return resolve(new WaffleResponse().setResponse("Apologies, this command has been taken temporarily offline due to :waffle: **Dorfnox** :waffle: being too lazy to fix it."));
             let wr = this._verifyInVoiceChannel(msg);
             if (wr.isError) return resolve(wr);
 

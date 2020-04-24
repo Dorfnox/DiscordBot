@@ -71,7 +71,7 @@ class MessageHandler {
             },
             'join': {
                 name: 'Join',
-                execute: this.executeJoin,
+                execute: (msg, args) => this.waffleMusic.join(msg, args),
                 description: 'Provide the name of a VOICE CHANNEL to join.',
                 aliases: ['j'],
                 helpCategory: this.helpCategory.music,
@@ -266,10 +266,6 @@ class MessageHandler {
                 return itm.aliases ? `${val} Alias: '${itm.aliases.join(`', '`)}'.`: val;
             }).join('\n\n');
         wr.setEmbeddedResponse({ title, description }).reply(msg);
-    }
-
-    executeJoin(msg, args) {
-        this.waffleMusic.join(msg, args);
     }
 
     executeOops(msg) {

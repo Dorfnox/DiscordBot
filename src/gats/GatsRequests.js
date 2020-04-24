@@ -113,25 +113,43 @@ class GatsRequests {
   static _requestStatsData(url) {
     return GatsRequests._loadCheerioData(url)
       .then(cdata => {
-        // Collect proper name
-        const name = getSafe(() => cdata('#pageContainer > div:nth-child(1) > div:nth-child(1) > h1').text().trim().split(' ')[0], 'unknown');
+        const vipSelector = `#pageContainer > h1`;
+        const nameSelector = (nthChild) => `#pageContainer > div:nth-child(${nthChild}) > div:nth-child(1) > h1`;
+        const statsSelector = (nthChild) => `#pageContainer > div:nth-child(${nthChild}) > div:nth-child(1) > table > tbody > tr`;
+        const favoriteLoadoutsSelector = (nthChild) => `#pageContainer > div:nth-child(${nthChild}) > div:nth-child(2) > div > table > tbody > tr`;
 
-        // Collect Regular Stats
-        const stats = cdata('#pageContainer > div:nth-child(1) > div:nth-child(1) > table > tbody > tr').map((_, elem) => {
+        // Collect vip details
+        const vip = getSafe(() => {
+          const vipData = cdata(vipSelector).text().trim().split('\n').filter(t => t !== '');
+          let isVip = false;
+          let since = null;
+          if (vipData.length === 2 && vipData[0] === 'Premium Member') {
+            isVip = true;
+            since = vipData[1].substring(6);
+          }
+          return { isVip, since }
+        }, { isVip: false, since: null });
+
+        const nthChild = vip.isVip ? 3 : 1;
+
+        // Collect proper name
+        const name = getSafe(() => cdata(nameSelector(nthChild)).text().trim().split(' ')[0], 'unknown');
+
+        const stats = cdata(statsSelector(nthChild)).map((_, elem) => {
           const stat = getSafe(() => elem.children[1].children[0].data.trim(), 'no stat');
           const value = getSafe(() => elem.children[3].children[0].data.trim(), 'no value');
           return { stat, value };
         }).get();
 
         // Collect Favorite Loadouts
-        const favoriteLoadouts = cdata('#pageContainer > div:nth-child(1) > div:nth-child(2) > div > table > tbody > tr').map((_, elem) => {
+        const favoriteLoadouts = cdata(favoriteLoadoutsSelector(nthChild)).map((_, elem) => {
           const stat = getSafe(() => elem.children[1].children[1].children[0].data.trim(), 'no stat');
           const value = getSafe(() => elem.children[1].children[3].children[0].data.trim(), 'no value');
           const imageUrl = getSafe(() => `https://stats.gats.io${elem.children[3].children[0].attribs.src.trim()}`, gatsLogoUrl);
           return { stat, value, imageUrl };
         }).get();
 
-        return { url, name, stats, favoriteLoadouts };
+        return { url, name, stats, favoriteLoadouts, vip };
       });
   }
 }
