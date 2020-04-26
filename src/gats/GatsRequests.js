@@ -13,7 +13,8 @@ class GatsRequests {
     highScoresData: {
       siteUrl: "https://gats.io/",
       lastRequest: 0,
-      data: []
+      data: [],
+      mutexLock: false
     }
   };
 
@@ -71,36 +72,53 @@ class GatsRequests {
 
   static requestTopFiveData() {
     const now = Date.now();
-    const { lastRequest, siteUrl } = GatsRequests.gatsCache.highScoresData;
+    const { lastRequest, siteUrl, mutexLock } = GatsRequests.gatsCache.highScoresData;
     // Only update cache if it's been more than the longevity of the cache config. Default to 120 seconds.
-    if (now - lastRequest > Math.max(0, (topFiveCacheLongevityInSeconds || 120) * 1000)) {
+    if (!mutexLock && now - lastRequest > Math.max(0, (topFiveCacheLongevityInSeconds || 120) * 1000)) {
+
+      // Lock further spam requests
+      GatsRequests.gatsCache.highScoresData.mutexLock = true;
+
+      // Open site
       return Nightmare({ show: false, gotoTimeout: 15000, waitTimeout: 15000 })
         .goto(siteUrl)
-        .wait("#highScoresData#highScoresData > br:nth-child(5)")
-        .evaluate(() => document.getElementById("highScoresData").innerText)
+        .wait('#highScoresData > div:nth-child(5) > div.high-scores-text')
+        .evaluate(() => document.getElementById('highScoresData').innerHTML)
         .end()
-        .then(text => {
-          let data = text.split("\n");
-          data.shift();
-          data = data.map(row => {
-            const elems = row.split(" ");
-            return {
-              position: elems[0][0],
-              player: elems[1].slice(0, -1),
-              points: elems[2],
-            };
-          });
-          // Update Cache
-          GatsRequests.gatsCache.highScoresData.lastRequest = now;
-          GatsRequests.gatsCache.highScoresData.data = data;
-          return data;
+        .then(html => {
+          const cdata = cheerio.load(html, { normalizeWhitespace: true });
+          const data = cdata('.high-score-row').map((_, elem) => {
+            const isVip = elem.children[0].children[0] ? true : false;
+            const position = `${_ + 1}`;
+            const [ player, points ] = elem.children[1].children[0].data.trim().split(': ');
+            return { isVip, position, player, points };
+          }).get();
+
+          // Reequest player stats
+          const playerRequestArray = data.map(d => this.requestPlayerStatsData(d.player));
+          return Promise.all(playerRequestArray)
+            .then(values => {
+              // Add playerStats data to return
+              values.forEach((v, idx) => {
+                data[idx].playerStats = v;
+              });
+              // Update Cache
+              GatsRequests.gatsCache.highScoresData.lastRequest = now;
+              GatsRequests.gatsCache.highScoresData.data = data;
+              return data;
+            });
         })
         .catch(err => {
             // Log error
             new WaffleResponse().setErrorLocale("requestTopFiveData").setError(err).reply();
             return [];
+        })
+        .finally(() => {
+          // Unlock mutex
+          GatsRequests.gatsCache.highScoresData.mutexLock = false;
         });
     }
+    // If cache update intrval has not been reached yet, or there is a mutex lock in place.
     return Promise.resolve(GatsRequests.gatsCache.highScoresData.data);
   }
 

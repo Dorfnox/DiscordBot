@@ -1,7 +1,7 @@
 const GatsRequests = require('./GatsRequests');
 const WaffleResponse = require('../message/WaffleResponse');
-const { dynamicStrSpaceFill, zeroWidthSpaceChar } = require('../util/WaffleUtil');
-const { gatsLogoUrl } = require('./GatsConstants');
+const { dynamicStrSpaceFill, randomFromArray, zeroWidthSpaceChar } = require('../util/WaffleUtil');
+const { gatsUrl, gatsLogoUrl } = require('./GatsConstants');
 
 
 class GatsScraper {
@@ -62,16 +62,44 @@ class GatsScraper {
   }
 
   getTopFive() {
+    const sp2 = ` ${zeroWidthSpaceChar} `;
+    const sp3 = ` ${zeroWidthSpaceChar} ${zeroWidthSpaceChar} `;
     return GatsRequests.requestTopFiveData()
       .then(data => {
         const wr = new WaffleResponse();
-        const fields = data.map(p => {
-          return { name: `**${p.points}**`, value: `#${p.position}   **${p.player}**` };
-        });
-        if (!fields.length) {
+        if (!data.length) {
           return wr.setResponse('⚠️ *Could not find gats top five data*');
         }
-        return wr.setEmbeddedResponse({ fields });;
+
+        // Get longest str length of scores
+        let longestScore = 0;
+        data.forEach(p => {
+          if (p.points.length + 1 > longestScore) {
+            longestScore = p.points.length + 1;
+          }
+        });
+
+        // Title
+        const title = `Current Top Five Players on the Leaderboard`;
+
+        // Thumbnail
+        const thumbnail = { url: gatsLogoUrl };
+
+        // Desscription
+        const description = `\n${sp2}\n`.concat(data.map(p => {
+          const { isVip, position, player, points, playerStats } = p;
+          const { stats, url } = playerStats;
+          const { stat, value } = randomFromArray(stats);
+
+          const dynamicPoints = dynamicStrSpaceFill(points, longestScore);
+          const waffle = player === 'dorfnox' ? `${sp3}:waffle:` : '';
+          const moneyBag = isVip ? `${sp3}:moneybag:` : '';
+          const crown = position === '1' ? `${sp3}:crown:` : '';
+          const funFact = `\n*fun fact*:${sp3}${player}'s [${stat.toLowerCase()}](${url}) is **${value}**!\n`;
+          return `\`#${position} •${sp2}${dynamicPoints}\`${sp2}**${player}**${waffle}${moneyBag}${crown}${funFact}`;
+        }).join('\n').concat(`\n\n[Find the leaderboard on the Gats homepage](${gatsUrl})`));
+
+        return wr.setEmbeddedResponse({ title, thumbnail, description });;
       });
   }
 
