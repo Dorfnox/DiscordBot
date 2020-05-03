@@ -65,7 +65,7 @@ class WaffleMail {
         .then((sentMsg) => {
           this.serverMailController
             .initForAuthorDmChannelAndGuild(guildMember.user, sentMsg.channel, guild)
-            .catch((err) => console.log(error));
+            .catch((err) => console.log(err));
         });
     } else {
       channel
