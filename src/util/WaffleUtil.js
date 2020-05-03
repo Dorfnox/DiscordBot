@@ -48,7 +48,7 @@ function getSafe(fn, defaultVal = null, errCallback = null) {
 }
 
 function isStaff(guildMember) {
-  return guildMember.hasPermission('KICK_MEMBERS') || guildMember.hasPermission('ADMINISTRATOR');
+  return !guildMember.user.bot && (guildMember.hasPermission('KICK_MEMBERS') || guildMember.hasPermission('ADMINISTRATOR'));
 }
 
 function randomFromArray(myArray) {
