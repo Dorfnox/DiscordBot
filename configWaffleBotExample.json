@@ -14,7 +14,9 @@
         "topFiveCacheLongevityInSeconds": 120
     },
     "modMail": {
-        "modMailChannelCategoryName": "WaffleMail"
+        "modMailChannelCategoryName": "WaffleMail",
+        "openChannelUptimeInSeconds": 120,
+        "roleName": "WaffleMod"
     },
     "mongoDB": {
         "mongoDatabaseName": "Database for storing persistent information",

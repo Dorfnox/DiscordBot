@@ -8,7 +8,9 @@ const WaffleMail = require('../mail/WaffleMail');
 const OwnerCommands = require('../owner/OwnerCommands');
 const WaffleResponse = require('./WaffleResponse');
 const { arrayFromObjectValues, randomFromArray } = require('../util/WaffleUtil');
-const { prefixes } = require('../../configWaffleBot.json').chat;
+const config = require('../../configWaffleBot.json');
+const { prefixes } = config.chat;
+const { modMailChannelCategoryName } = config.modMail;
 
 
 class MessageHandler {
@@ -204,11 +206,14 @@ class MessageHandler {
         }
 
         // Handle Direct Messages
-
         if (!guild && msg.channel instanceof Discord.DMChannel) {
-            // ~~~~ Currently in Beta, so here is where we exit
-            return ; //this.waffleMail.handleDM(msg);
+            return this.waffleMail.handleDM(msg);
+
+        } else if (msg.channel.parent && msg.channel.parent.name === modMailChannelCategoryName) {
+            return this.waffleMail.handleModChannel(msg);
         }
+
+        // Handle Mod Mail Messages
 
         const args = content.trim().split(/\s+/);
 
