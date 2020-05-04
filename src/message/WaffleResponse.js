@@ -71,32 +71,42 @@ class WaffleResponse {
         return this;
     }
 
-    async reply(msg) {
+    async reply(msg, cb = null) {
+      let replyMsg = null;
+      try {
         if (msg && this.isSendable && this.response) {
-            if (this.isDirectReply) {
-                await msg.reply(this.response);
-            }
-            else await msg.channel.send(this.response);
+          if (this.isDirectReply) {
+            replyMsg = await msg.reply(this.response);
+          } else {
+            replyMsg = await msg.channel.send(this.response);
+          }
         }
-        // Log results without blocking main thread
-        if (this.isLoggable) {
-            const now = new Date().toISOString();
-            setTimeout(() => {
-                getSafe(() => {
-                    const logger = this.isError ? console.error : console.log;
-                    const username = getSafe(() => msg.member.user.username, 'unknownUser');
-                    const errorLocale = this.errorLocale ? ` | ${this.errorLocale}` : '';
-                    const logMsg = `\n__MSG ${getSafe(() => msg.content || '', '')}`;
-                    const response = `\n__RES ${JSON.stringify(this.response.embed || this.response)}`;
-                    const logResponse = this.logResponseLimit > -1 ?
-                        `${response.substr(0, this.logResponseLimit)}${this.logResponseLimit < response.length ? `... +${response.length - this.logResponseLimit} more chars` : ''}` :
-                        response;
-                    const logError = this.error ? `\n__ERR ${JSON.stringify(this.error || '')}` : '';
-                    logger(`[${now} | ${username}${errorLocale}] ${logMsg}${logResponse}${logError}\n`);
-                }, null, err => console.error('WR LOG ERROR: ', err, '\n'));
-            }, 100);
-        }
-        return this;
+      } catch (err) {
+        console.log('Could not reply: ', err);
+        replyMsg = null;
+      }
+      // Log results without blocking main thread
+      if (this.isLoggable) {
+        const now = new Date().toISOString();
+        setTimeout(() => {
+          getSafe(() => {
+            const logger = this.isError ? console.error : console.log;
+            const username = getSafe(() => msg.member.user.username, 'unknownUser');
+            const errorLocale = this.errorLocale ? ` | ${this.errorLocale}` : '';
+            const logMsg = `\n__MSG ${getSafe(() => msg.content || '', '')}`;
+            const response = `\n__RES ${JSON.stringify(this.response.embed || this.response)}`;
+            const logResponse = this.logResponseLimit > -1 ?
+                `${response.substr(0, this.logResponseLimit)}${this.logResponseLimit < response.length ? `... +${response.length - this.logResponseLimit} more chars` : ''}` :
+                response;
+            const logError = this.error ? `\n__ERR ${JSON.stringify(this.error || '')}` : '';
+            logger(`[${now} | ${username}${errorLocale}] ${logMsg}${logResponse}${logError}\n`);
+          }, null, err => console.error('WR LOG ERROR: ', err, '\n'));
+        }, 100);
+      }
+      if (cb) {
+        replyMsg ? cb(replyMsg) : cb(null, 'Did not reply');
+      }
+      return this;
     }
 }
 

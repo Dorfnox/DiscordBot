@@ -1,3 +1,12 @@
+// For use with Maps in the form: Map<k>:Set<v>
+function addValueToMapSet(map, key, setValue) {
+  if (!map.has(key)) {
+    return map.set(key, new Set().add(setValue));
+  }
+  map.get(key).add(setValue);
+  return map;
+}
+
 function arrayFromObjectValues(object) {
   return Object.keys(object).map((key) => object[key]);
 }
@@ -9,6 +18,19 @@ function decrementMaxMap(map, id) {
   } else {
     map.set(id, newCount);
   }
+}
+
+// For use with Maps in the form: Map<k>:Set<v>
+function deleteValueFromMapSet(map, key, setValue) {
+  if (!map.has(key)) {
+    return map;
+  }
+  const mySet = map.get(key);
+  mySet.delete(setValue);
+  if (!mySet.size) {
+    map.delete(key);
+  }
+  return map;
 }
 
 function dynamicStrSpaceFill(str, longestStrLen) {
@@ -73,8 +95,10 @@ function retry(fn, retries = 3, err = null) {
 zeroWidthSpaceChar = "\u200b";
 
 module.exports = {
+  addValueToMapSet,
   arrayFromObjectValues,
   decrementMaxMap,
+  deleteValueFromMapSet,
   dynamicStrSpaceFill,
   getNumberFromArguments,
   getSafe,

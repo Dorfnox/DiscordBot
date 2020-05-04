@@ -6,6 +6,7 @@ const WaffleMusic = require('../music/WaffleMusic');
 const Pokemon = require('../pokemon/Pokemon');
 const WaffleMail = require('../mail/WaffleMail');
 const OwnerCommands = require('../owner/OwnerCommands');
+const GuildManager = require('../guild-controls/GuildManager');
 const WaffleResponse = require('./WaffleResponse');
 const { arrayFromObjectValues, randomFromArray } = require('../util/WaffleUtil');
 const config = require('../../configWaffleBot.json');
@@ -23,6 +24,10 @@ class MessageHandler {
         this.waffleMail = new WaffleMail(client);
         this.ownerCommands = new OwnerCommands(client);
         this.helpCategory = {
+            admin: {
+                name: 'Admin',
+                description: 'Commands for admin use only.',
+            },
             gats: {
                 name: 'Gats',
                 description: 'Queries for gats information.'
@@ -148,6 +153,13 @@ class MessageHandler {
                 description: 'I will repeat what you say :D',
                 helpCategory: this.helpCategory.general,
             },
+            'screwbots': {
+                name: 'ScrewBots',
+                execute: (msg) => GuildManager.screwbots(msg),
+                description: 'Removes all bot messages from invoked channel.',
+                aliases: ['nobots', 'sb'],
+                helpCategory: this.helpCategory.admin,
+            },
             'setstatus': {
                 name: 'SetStatus',
                 execute: (msg, args) => this.ownerCommands.setStatus(msg, args),
@@ -186,7 +198,14 @@ class MessageHandler {
                 execute: this.executeUnpause,
                 description: 'Unpause the current song.',
                 helpCategory: this.helpCategory.music,
-            }
+            },
+            'unscrewbots': {
+                name: 'UnScrewBots',
+                execute: (msg) => GuildManager.unscrewbots(msg),
+                description: 'Removes all bot messages from invoked channel.',
+                aliases: ['yesbots', 'usb'],
+                helpCategory: this.helpCategory.admin,
+            },
         }
         // Map of Alias -> Command (eg: p -> play )
         this.aliasMap = new Map();
@@ -199,21 +218,30 @@ class MessageHandler {
 
     handleMessage(msg) {
         const { content, guild, author } = msg;
+        const { bot: isBot } = author;
         const wr = new WaffleResponse();
 
-        if (!content || !author || author.bot) {
+        if (!author) {
             return ;
         }
 
-        // Handle Direct Messages
-        if (!guild && msg.channel instanceof Discord.DMChannel) {
+        // Handle Direct Mod-Mail Messages
+        if (!isBot && !guild && msg.channel instanceof Discord.DMChannel) {
             return this.waffleMail.handleDM(msg);
 
-        } else if (msg.channel.parent && msg.channel.parent.name === modMailChannelCategoryName) {
+        } else if (!isBot && msg.channel.parent && msg.channel.parent.name === modMailChannelCategoryName) {
             return this.waffleMail.handleModChannel(msg);
         }
+        
+        // Handle Guild admin-controlled operations
+        if (GuildManager.shouldRemoveMsg(msg)) {
+            return GuildManager.removeBotMessage(msg);
+        }
 
-        // Handle Mod Mail Messages
+        // From this point forward, we ignore bot messages
+        if (isBot || !content) {
+            return ;
+        }
 
         const args = content.trim().split(/\s+/);
 
