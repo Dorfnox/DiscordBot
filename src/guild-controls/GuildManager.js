@@ -71,7 +71,7 @@ class GuildManager {
         const description =
           `All bot messages will now :bomb: **self-destruct** :bomb: after 5 seconds from #${msg.channel.name}.` +
           `\nTo undo this change, please type **w unscrewbots**.\n` +
-          `\n\n*This has been a message from your friendly neighborhood bomber-bot.* ***Goodbye!***`;
+          `\n*This has been a message from your friendly neighborhood bomber-bot.* ***Goodbye!***`;
         new WaffleResponse()
           .setEmbeddedResponse({ title, description })
           .reply(msg);
@@ -101,7 +101,7 @@ class GuildManager {
         const description =
           `Bot messages will no longer self-destruct in #${msg.channel.name}.` +
           `\nTo screw over bots again, type **w screwbots**.\n` +
-          `\n\n*This has been a message from your friendly neighborhood bomber-bot.* ***Goodbye!***`;
+          `\n*This has been a message from your friendly neighborhood bomber-bot.* ***Goodbye!***`;
         new WaffleResponse()
           .setEmbeddedResponse({ title, description })
           .reply(msg);
