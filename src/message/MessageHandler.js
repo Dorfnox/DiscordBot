@@ -202,7 +202,7 @@ class MessageHandler {
             'unscrewbots': {
                 name: 'UnScrewBots',
                 execute: (msg) => GuildManager.unscrewbots(msg),
-                description: 'Removes all bot messages from invoked channel.',
+                description: 'Allows bots to again post messages in a channel if they have been previously screwed.',
                 aliases: ['yesbots', 'usb'],
                 helpCategory: this.helpCategory.admin,
             },
