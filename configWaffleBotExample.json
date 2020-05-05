@@ -2,6 +2,10 @@
     "init": {
         "token": "My Amazing Token from Discord Developer Portal"
     },
+    "invite": {
+        "link": "OAuth 2 Invite Link with recommended perms: permissions=305233712&scope=bot",
+        "botImgUrl": "https://cdn.discordapp.com/app-icons/684985021018275894/3bfb20b8f948fd4261656022dfeb0894.png?size=256"
+    },
     "chat": {
         "prefixes": [
             "waffle",

@@ -76,6 +76,13 @@ class MessageHandler {
                 description: 'Try \'how old is kendron\' to find out Kendron\'s age!',
                 helpCategory: this.helpCategory.general,
             },
+            'invite': {
+                name: 'Invite',
+                execute: (msg) => this.genericResponse.invite(msg),
+                description: 'Invite Link to add WaffleBot to your server!',
+                aliases: ['inv'],
+                helpCategory: this.helpCategory.general,
+            },
             'join': {
                 name: 'Join',
                 execute: (msg, args) => this.waffleMusic.join(msg, args),

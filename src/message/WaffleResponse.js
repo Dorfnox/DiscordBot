@@ -85,7 +85,7 @@ class WaffleResponse {
         console.log('Could not reply: ', err);
         replyMsg = null;
       }
-      // Log results without blocking main thread
+      // Log results without blocking main 'thread'
       if (this.isLoggable) {
         const now = new Date().toISOString();
         setTimeout(() => {
