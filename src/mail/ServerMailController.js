@@ -40,7 +40,12 @@ class ServerMailController {
       let uc = this.getOpenChannel(authorId);
       if (!uc.complete) {
         return Promise.reject();
+      } else if (guild && uc.guild.id !== guild.id) {
+        return Promise.reject(
+          `🚫 ${author.name} is currently speaking with a different guild. Try again in a few minutes.`
+        );
       }
+      this._resetIdleTimer(uc);
       return Promise.resolve(uc);
     }
     const userControl = {
@@ -74,12 +79,8 @@ class ServerMailController {
       })
       .then((textChannel) => {
         // Reset Self Destruct Timeout
-        if (userControl.selfDestructTimeout) {
-          clearTimeout(userControl.selfDestructTimeout);
-        }
-        userControl.selfDestructTimeout = setTimeout(() => {
-          this.deleteOpenChannel(authorId);
-        }, openChannelUptimeInSeconds * 1000);
+        this._resetIdleTimer(userControl);
+
         // Return userControl
         userControl.textChannel = textChannel;
         userControl.complete = true;
@@ -133,15 +134,21 @@ class ServerMailController {
   _queryUserForGuild(userControl, sharedGuilds) {
     const { dmChannel } = userControl;
     const sharedGuildArray = [...sharedGuilds.values()];
-    const title = "Server Selection Required.";
-    const description = sharedGuildArray
-      .map((v, i) => {
-        return `\`${i}\` ${v.name} - ${v.memberCount} members`;
-      })
-      .join("\n")
-      .concat(
-        `\n\n*You will have ${openChannelUptimeInSeconds} seconds to reply.\nYou will not be able to open a new thingy...blahblahblah*`
-      );
+    const title = "Welcome to WaffleMail!";
+    const description =
+      `This feature is designed for you to talk directly with staff of a server.` +
+      `\nFirst, **select a server** by replying with the provided #:\n\n` +
+      sharedGuildArray
+        .map((v, i) => {
+          return `\`${i}\` **${v.name}** - ${v.memberCount} members`;
+        })
+        .join("\n")
+        .concat(
+          `\n\nYou will have ***${openChannelUptimeInSeconds} seconds*** to reply & message staff.` +
+            `\nThis timer resets with every message sent.` +
+            `\nIf you fail to reply/msg staff within this time, a new server selection will be required.` +
+            `\nYou will not be able to open a staff chat with a different server until this time elapses.`
+        );
     return dmChannel
       .send({
         embed: {
@@ -150,13 +157,16 @@ class ServerMailController {
         },
       })
       .then(() => {
-        return this._handleQueryUserForGuildRespones(userControl, sharedGuildArray);
+        return this._handleQueryUserForGuildRespones(
+          userControl,
+          sharedGuildArray
+        );
       });
   }
 
   _handleQueryUserForGuildRespones(userControl, sharedGuildArray) {
     return new Promise((resolve, reject) => {
-      const { author, dmChannel } = userControl ;
+      const { author, dmChannel } = userControl;
 
       // Create message collector
       const msgFilter = (m) => m.author.id === author.id;
@@ -173,6 +183,13 @@ class ServerMailController {
         }
         collector.stop("guildSelected");
         const sharedGuild = sharedGuildArray[numArg];
+        dmChannel
+          .send({
+            embed: {
+              description: `You now have a direct line of communication with staff members in **${sharedGuild.name}** :champagne:`,
+            },
+          })
+          .catch((e) => console.log(e));
         resolve(sharedGuild);
       });
 
@@ -310,6 +327,15 @@ class ServerMailController {
         },
       ],
     });
+  }
+
+  _resetIdleTimer(userControl) {
+    if (userControl.selfDestructTimeout) {
+      clearTimeout(userControl.selfDestructTimeout);
+    }
+    userControl.selfDestructTimeout = setTimeout(() => {
+      this.deleteOpenChannel(authorId);
+    }, openChannelUptimeInSeconds * 1000);
   }
 }
 

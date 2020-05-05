@@ -53,30 +53,56 @@ class WaffleMail {
         m.user.username.toLowerCase() === username &&
         m.user.discriminator === discriminator
     );
-    if (guildMember) {
-      const description = `**${msg.author.username}**\n${msg.content}`;
-      guildMember
-        .send({
-          embed: {
-            color: "#fad6a5", // Deep Champagne
-            description,
-          },
+    if (!guildMember) {
+      return new WaffleResponse()
+        .setEmbeddedResponse({
+          color: "#ff0028", // Ruddy
+          description: `Unfortunately, ${username} no longer appears active in ${guild.name}`,
         })
-        .then((sentMsg) => {
-          this.serverMailController
-            .initForAuthorDmChannelAndGuild(guildMember.user, sentMsg.channel, guild)
-            .catch((err) => console.log(err));
-        });
-    } else {
-      channel
-        .send({
-          embed: {
-            color: "#ff0028", // Ruddy
-            description: `Unfortunately, ${username} no longer appears active in ${guild.name}`,
-          },
-        })
-        .catch((err) => console.log(err));
+        .reply(msg);
     }
+    guildMember.user
+      .createDM()
+      .then((dmChannel) =>
+        this.serverMailController.initForAuthorDmChannelAndGuild(
+          guildMember.user,
+          dmChannel,
+          guild
+        )
+      )
+      .then((userController) => {
+        return userController.author
+          .send({
+            embed: {
+              color: "#fad6a5", // Deep Champagne
+              description: msg.content,
+              author: {
+                name: msg.member.displayName,
+                icon_url: msg.author.displayAvatarURL(),
+              },
+              footer: {
+                text: `Sent from ${guild.name}`
+              }
+            },
+          })
+          .catch((err) =>
+            new WaffleResponse()
+              .setError(err)
+              .setEmbeddedResponse({
+                description: `Unable to DM ${userController.author.name}. Here was the error: ${err}`,
+              })
+              .reply(msg)
+          );
+      })
+      .catch((err) =>
+        // Catches failure to intialize a DM channel
+        new WaffleResponse()
+          .setError(err)
+          .setEmbeddedResponse({
+            description: `🚫 Could not instantiate a DM channel with ${username}`,
+          })
+          .reply(msg)
+      );
   }
 }
 

@@ -98,7 +98,7 @@ class WaffleMongo {
       .updateOne(findArgs, { $setOnInsert: insertArgs }, { upsert: true })
       .then((res) => res.result)
       .catch((err) => {
-        console.log("Error performing insertMany: ", err);
+        console.log("Error performing insertOneIfNotExists: ", err);
         throw err;
       });
   }
