@@ -1,6 +1,6 @@
+const ArgumentHandler = require("../message/ArgumentHandler");
 const WaffleResponse = require("../message/WaffleResponse");
 const ServerMailController = require("./ServerMailController");
-const { zeroWidthSpaceChar: sp } = require('../util/WaffleUtil');
 const {
   modMailChannelCategoryName,
 } = require("../../configWaffleBot.json").modMail;
@@ -12,6 +12,12 @@ class WaffleMail {
   constructor(client) {
     this.client = client;
     this.serverMailController = new ServerMailController(client);
+    this.closeChannelArgHandler = new ArgumentHandler().addCmds([
+      "close",
+      "end",
+      "finish",
+      "c c c"
+    ]);
   }
 
   handleDM(msg) {
@@ -49,11 +55,16 @@ class WaffleMail {
         m.user.username.toLowerCase() === username &&
         m.user.discriminator === discriminator
     );
+    // Check if we should close the channel
+    const argsParsed = this.closeChannelArgHandler.hasArgument(msg.content, true);
+    if (argsParsed) {
+      return new WaffleResponse().setEmbeddedResponse({ description: `Yes! Args parsed: ${argsParsed}` }).reply(msg);
+    }
     if (!guildMember) {
       return new WaffleResponse()
         .setEmbeddedResponse({
           color: "#ff0028", // Ruddy
-          description: `Unfortunately, ${username} no longer appears active in ${guild.name}`,
+          description: `Unfortunately, ${username} no longer appears active in ${guild.name}. **Close** this channel with 'w close *reason*'.`,
         })
         .reply(msg);
     }
@@ -72,7 +83,9 @@ class WaffleMail {
           .send(`**${msg.member.displayName}**: ${msg.content}`)
           .then(() => {
             // Feedback on mod channel to let staff know that message went through
-            wr.setEmbeddedResponse({ description: `:white_check_mark: message sent to ${userController.author.username}`}).reply(msg);
+            wr.setEmbeddedResponse({
+              description: `:white_check_mark: message sent to ${userController.author.username}`,
+            }).reply(msg);
           })
           .catch((err) =>
             wr
