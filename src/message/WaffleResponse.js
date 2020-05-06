@@ -26,7 +26,7 @@ class WaffleResponse {
     }
 
     setError(error) {
-        this.error = error.message ? error.message : error;
+        this.error = error && error.message ? error.message : error;
         return this.setIsError(this.error ? true : false);
     }
 

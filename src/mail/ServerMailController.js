@@ -186,7 +186,7 @@ class ServerMailController {
         dmChannel
           .send({
             embed: {
-              description: `You now have a direct line of communication with staff members in **${sharedGuild.name}** :champagne:`,
+              description: `**${sharedGuild.name}** staff members can now communicate with you from here :champagne:\n*Your initial message was sent to the server.*`,
             },
           })
           .catch((e) => console.log(e));

@@ -1,5 +1,6 @@
 const WaffleResponse = require("../message/WaffleResponse");
 const ServerMailController = require("./ServerMailController");
+const { zeroWidthSpaceChar: sp } = require('../util/WaffleUtil');
 const {
   modMailChannelCategoryName,
 } = require("../../configWaffleBot.json").modMail;
@@ -19,12 +20,7 @@ class WaffleMail {
       .init(msg)
       .then((userController) => {
         const { textChannel } = userController;
-        textChannel.send({
-          embed: {
-            color: "#ffffff",
-            description: msg.content,
-          },
-        });
+        return textChannel.send(msg.content);
       })
       .catch((err) => {
         if (err) {
@@ -72,19 +68,7 @@ class WaffleMail {
       )
       .then((userController) => {
         return userController.author
-          .send({
-            embed: {
-              color: "#fad6a5", // Deep Champagne
-              description: msg.content,
-              author: {
-                name: msg.member.displayName,
-                icon_url: msg.author.displayAvatarURL(),
-              },
-              footer: {
-                text: `Sent from ${guild.name}`
-              }
-            },
-          })
+          .send(`**${msg.member.displayName}**: ${msg.content}`)
           .catch((err) =>
             new WaffleResponse()
               .setError(err)
@@ -99,7 +83,7 @@ class WaffleMail {
         new WaffleResponse()
           .setError(err)
           .setEmbeddedResponse({
-            description: `🚫 Could not instantiate a DM channel with ${username}`,
+            description: `🚫 Could not instantiate a DM channel with ${username}.\nLikely, the user is confirming an operation with WaffleMail at this very moment.`,
           })
           .reply(msg)
       );
