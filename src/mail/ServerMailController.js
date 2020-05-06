@@ -298,12 +298,12 @@ class ServerMailController {
     if (textChannel) {
       return Promise.resolve(textChannel);
     }
-    const channelName = `${author.username}${author.discriminator}-${modMailChannelCategoryName}`.toLowerCase();
+    const channelName = `${author.username.replace(/\s/g, "-")}${
+      author.discriminator
+    }-${modMailChannelCategoryName}`.toLowerCase();
     textChannel = guild.channels.cache.find(
-      (ch) => {
-        console.log("CHANNEL", ch);
-        return ch.type === "text" && ch.deleted === false && ch.name === channelName
-      }
+      (ch) =>
+        ch.type === "text" && ch.deleted === false && ch.name === channelName
     );
     if (textChannel) {
       return Promise.resolve(textChannel);

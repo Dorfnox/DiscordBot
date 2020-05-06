@@ -13,10 +13,12 @@ class WaffleMail {
     this.client = client;
     this.serverMailController = new ServerMailController(client);
     this.closeChannelArgHandler = new ArgumentHandler().addCmds([
+      "resolve",
       "close",
       "end",
       "finish",
-      "c c c"
+      "complete",
+      "delete",
     ]);
   }
 
@@ -52,13 +54,14 @@ class WaffleMail {
     );
     const guildMember = guild.members.cache.find(
       (m) =>
-        m.user.username.toLowerCase() === username &&
+        m.user.username.replace(/\s/g, "-").toLowerCase() === username &&
         m.user.discriminator === discriminator
     );
     // Check if we should close the channel
     const argsParsed = this.closeChannelArgHandler.hasArgument(msg.content, true);
     if (argsParsed) {
-      return new WaffleResponse().setEmbeddedResponse({ description: `Yes! Args parsed: ${argsParsed}` }).reply(msg);
+      const reason = msg.content.split(/\s/g).slice(argsParsed).join(' ');
+      return this._closeChannel(msg, guildMember, reason);
     }
     if (!guildMember) {
       return new WaffleResponse()
@@ -105,6 +108,23 @@ class WaffleMail {
           })
           .reply(msg)
       );
+  }
+
+  _closeChannel(msg, guildMember, reason) {
+    if (!reason) {
+      const description = "Please provide a reason for closing this channel";
+      return new WaffleResponse().setEmbeddedResponse({ description }).reply(msg);
+    }
+    return msg.channel.delete(reason).then(() => {
+      if (guildMember) {
+        this.serverMailController.deleteOpenChannel(guildMember.user.id);
+        const embed = {
+          color: '#e2c779',
+          description: `🧇 Your issues have been marked as **resolved** by **${msg.member.displayName}**. Thank you for using WaffleMail!`
+        }
+        return guildMember.user.send({ embed });
+      }
+    })
   }
 }
 
