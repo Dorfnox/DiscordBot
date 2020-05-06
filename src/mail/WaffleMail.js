@@ -120,7 +120,7 @@ class WaffleMail {
         this.serverMailController.deleteOpenChannel(guildMember.user.id);
         const embed = {
           color: '#e2c779',
-          description: `🧇 Your issues have been marked as **resolved** by **${msg.member.displayName}**. Thank you for using WaffleMail!`
+          description: `🧇 Your issues have been marked as **resolved** by **${msg.member.displayName}** for '${reason}'.\nThank you for using WaffleMail!`
         }
         return guildMember.user.send({ embed });
       }
