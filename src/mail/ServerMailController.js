@@ -317,7 +317,7 @@ class ServerMailController {
       permissionOverwrites: [
         {
           id: guild.id,
-          deny: ["VIEW_CHANNEL"],
+          deny: ["VIEW_CHANNEL", "MENTION_EVERYONE"],
         },
         {
           id: this.client.user.id,
