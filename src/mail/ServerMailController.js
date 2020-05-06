@@ -334,7 +334,7 @@ class ServerMailController {
       clearTimeout(userControl.selfDestructTimeout);
     }
     userControl.selfDestructTimeout = setTimeout(() => {
-      this.deleteOpenChannel(authorId);
+      this.deleteOpenChannel(userControl.author.id);
     }, openChannelUptimeInSeconds * 1000);
   }
 }
