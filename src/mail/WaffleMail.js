@@ -67,10 +67,15 @@ class WaffleMail {
         )
       )
       .then((userController) => {
+        const wr = new WaffleResponse();
         return userController.author
           .send(`**${msg.member.displayName}**: ${msg.content}`)
+          .then(() => {
+            // Feedback on mod channel to let staff know that message went through
+            wr.setEmbeddedResponse({ description: `:white_check_mark: message sent to ${userController.author.username}`}).reply(msg);
+          })
           .catch((err) =>
-            new WaffleResponse()
+            wr
               .setError(err)
               .setEmbeddedResponse({
                 description: `Unable to DM ${userController.author.name}. Here was the error: ${err}`,
