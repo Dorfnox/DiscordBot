@@ -28,7 +28,7 @@ class WaffleMail {
       .init(msg)
       .then((userController) => {
         const { textChannel } = userController;
-        return textChannel.send(msg.content);
+        return textChannel.send(msg.content.replace('@', '@ '));
       })
       .catch((err) => {
         if (err) {
@@ -63,7 +63,7 @@ class WaffleMail {
       true
     );
     if (argsParsed) {
-      const reason = msg.content.split(/\s/g).slice(argsParsed).join(" ");
+      const reason = ArgumentHandler.removeArgs(msg.content, argsParsed);
       return this._closeChannel(msg, guildMember, reason);
     }
     if (!guildMember) {

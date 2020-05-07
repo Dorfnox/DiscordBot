@@ -1,11 +1,15 @@
 const { prefixes } = require("../../configWaffleBot").chat;
 
 class ArgumentHandler {
+  static removeArgs(argString, numArgsToRemove) {
+    return argString.split(/\s/g).filter(i => i).slice(numArgsToRemove).join(" ");
+  }
+
   constructor(prefixArray = prefixes, unmappedArgFunc = () => {}) {
     this.argMap = new Map();
     this.lengthArray = [];
     this.largestCmdLength = 0;
-    this.prefixSet = new Set(prefixes);
+    this.prefixSet = new Set(prefixArray);
     this.unmappedArgFunc = unmappedArgFunc;
   }
 
@@ -54,7 +58,7 @@ class ArgumentHandler {
       argArray = argArray.slice(1);
       prefixParsed++;
     }
-    // Parse from lowest -> highest
+    // Parse from lowest -> highest (greedy match)
     const cmdsParsed = this.lengthArray.find((l) =>
       this.argMap.get(l).has(argArray.slice(0, l).join("_"))
     );
