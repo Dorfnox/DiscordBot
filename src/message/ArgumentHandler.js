@@ -62,7 +62,6 @@ class ArgumentHandler {
     const cmdsParsed = this.lengthArray.find((l) =>
       this.argMap.get(l).has(argArray.slice(0, l).join("_"))
     );
-    console.log(cmdsParsed);
     return cmdsParsed ? cmdsParsed + prefixParsed : 0;
   }
 

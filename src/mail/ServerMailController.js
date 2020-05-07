@@ -1,5 +1,6 @@
 const WaffleResponse = require("../message/WaffleResponse");
 const { getNumberFromArguments, isStaff } = require("../util/WaffleUtil");
+const { zeroWidthSpaceChar } = require("../util/WaffleUtil");
 const {
   modMailChannelCategoryName,
   openChannelUptimeInSeconds,
@@ -95,7 +96,7 @@ class ServerMailController {
           .reply();
         const description = !err.message
           ? err
-          : "An **issue** occurred while attempting to contact the mods. It may be due to one of the following reasons:\nblahblahblah.beta bug,permissions, etc...";
+          : "An **issue** occurred while attempting to contact the mods. It may be due to one of the following reasons:\n beta bug, permissions, etc...";
         return Promise.reject(description);
       });
   }
@@ -135,33 +136,34 @@ class ServerMailController {
     const { dmChannel } = userControl;
     const sharedGuildArray = [...sharedGuilds.values()];
     const title = "Welcome to WaffleMail!";
+    console.log(this.client.user.displayAvatarURL());
+    const thumbnail = {
+      url: this.client.user.displayAvatarURL({ dynamic: true, size: 128 }),
+    };
     const description =
-      `This feature is designed for you to talk directly with staff of a server.` +
-      `\nFirst, **select a server** by replying with the provided #:\n\n` +
+      `This feature is designed for you to talk directly with staff of a server. First, **select a server** by replying with the provided #:\n\n` +
       sharedGuildArray
         .map((v, i) => {
-          return `\`${i}\` **${v.name}** - ${v.memberCount} members`;
+          return `\`${i + 1}\` **${v.name}** - ${v.memberCount} members`;
         })
         .join("\n")
         .concat(
-          `\n\nYou will have ***${openChannelUptimeInSeconds} seconds*** to reply & message staff.` +
-            `\nThis timer resets with every message sent.` +
-            `\nIf you fail to reply/msg staff within this time, a new server selection will be required.` +
-            `\nYou will not be able to open a staff chat with a different server until this time elapses.`
+          `\n\n**General Guidelines**:\n>>> ` +
+            `Communication is open until ***${openChannelUptimeInSeconds} seconds*** of idle time elapses.\n` +
+            `You will not be able to open a staff chat with a different server until this time elapses.\n` +
+            `Do no abuse this feature - pinging of anyone **is** disabled.`
         );
     return dmChannel
       .send({
         embed: {
           title,
+          thumbnail,
           description,
         },
       })
-      .then(() => {
-        return this._handleQueryUserForGuildRespones(
-          userControl,
-          sharedGuildArray
-        );
-      });
+      .then(() =>
+        this._handleQueryUserForGuildRespones(userControl, sharedGuildArray)
+      );
   }
 
   _handleQueryUserForGuildRespones(userControl, sharedGuildArray) {
@@ -178,19 +180,22 @@ class ServerMailController {
       collector.on("collect", (m) => {
         const { content } = m;
         const numArg = getNumberFromArguments(content, true);
-        if (!((numArg || numArg == 0) && numArg < sharedGuildArray.length)) {
+        if (!(numArg && numArg < sharedGuildArray.length + 1)) {
           return;
         }
         collector.stop("guildSelected");
-        const sharedGuild = sharedGuildArray[numArg];
+        const sharedGuild = sharedGuildArray[numArg - 1];
         dmChannel
           .send({
             embed: {
               description: `**${sharedGuild.name}** staff members can now communicate with you from here :champagne:\n*Your initial message was sent to the server.*`,
             },
           })
-          .catch((e) => console.log(e));
-        resolve(sharedGuild);
+          .then(() => resolve(sharedGuild))
+          .catch((e) => {
+            console.log(e);
+            reject('Could not send message to DM channel');
+          });
       });
 
       // Process ending of this message collector
@@ -308,27 +313,43 @@ class ServerMailController {
     if (textChannel) {
       return Promise.resolve(textChannel);
     }
-    return guild.channels.create(channelName, {
-      type: "text",
-      topic: `Staff discussion for @${author.username}#${author.discriminator}`,
-      position: guild.channels.cache.size,
-      reason: `Staff discussion for @${author.username}#${author.discriminator} issue`,
-      parent: categoryChannel,
-      permissionOverwrites: [
-        {
-          id: guild.id,
-          deny: ["VIEW_CHANNEL", "MENTION_EVERYONE"],
-        },
-        {
-          id: this.client.user.id,
-          allow: ["VIEW_CHANNEL"],
-        },
-        {
-          id: role.id,
-          allow: ["VIEW_CHANNEL"],
-        },
-      ],
-    });
+    return guild.channels
+      .create(channelName, {
+        type: "text",
+        topic: `Staff discussion for @${author.username}#${author.discriminator}`,
+        position: guild.channels.cache.size,
+        reason: `Staff discussion for @${author.username}#${author.discriminator} issue`,
+        parent: categoryChannel,
+        permissionOverwrites: [
+          {
+            id: guild.id,
+            deny: ["VIEW_CHANNEL", "MENTION_EVERYONE"],
+          },
+          {
+            id: this.client.user.id,
+            allow: ["VIEW_CHANNEL"],
+          },
+          {
+            id: role.id,
+            allow: ["VIEW_CHANNEL"],
+          },
+        ],
+      })
+      .then((newChannel) => {
+        const color = "#a7a9ff"; // Light blue
+        const title = `WaffleMail chat for ${author.username}`;
+        const description =
+          `This channel was automatically opened for correspondance with ${author.username}.` +
+          `\n\nYou can close this open channel at any time with:\n**w close here is my reason**.`;
+        const thumbnail = {
+          url: author.displayAvatarURL({ dynamic: true, size: 128 }),
+        };
+        return newChannel
+          .send({
+            embed: { color, title, description, thumbnail },
+          })
+          .then(() => newChannel);
+      });
   }
 
   _resetIdleTimer(userControl) {
@@ -336,7 +357,12 @@ class ServerMailController {
       clearTimeout(userControl.selfDestructTimeout);
     }
     userControl.selfDestructTimeout = setTimeout(() => {
-      this.deleteOpenChannel(userControl.author.id);
+      const { author, guild } = userControl;
+      this.deleteOpenChannel(author.id);
+      const description = `Your chat session with **${guild.name}** has ended.\nThank you for using WaffleMail ${zeroWidthSpaceChar} :wave: :waffle:`;
+      userControl.author
+        .send({ embed: { description } })
+        .catch((err) => console.log(err));
     }, openChannelUptimeInSeconds * 1000);
   }
 }

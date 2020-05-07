@@ -1,6 +1,7 @@
 const ArgumentHandler = require("../message/ArgumentHandler");
 const WaffleResponse = require("../message/WaffleResponse");
 const ServerMailController = require("./ServerMailController");
+const { zeroWidthSpaceChar } = require("../util/WaffleUtil");
 const {
   modMailChannelCategoryName,
 } = require("../../configWaffleBot.json").modMail;
@@ -27,8 +28,12 @@ class WaffleMail {
     this.serverMailController
       .init(msg)
       .then((userController) => {
-        const { textChannel } = userController;
-        return textChannel.send(msg.content.replace('@', '@ '));
+        const { textChannel, author } = userController;
+        const color = "#906000"; // Rat brown
+        const description = `:poop: ${zeroWidthSpaceChar} **${
+          author.username
+        }**: ${msg.content.replace("@", "@ ")}`;
+        return textChannel.send({ embed: { color, description } });
       })
       .catch((err) => {
         if (err) {
@@ -70,7 +75,7 @@ class WaffleMail {
       return new WaffleResponse()
         .setEmbeddedResponse({
           color: "#ff0028", // Ruddy
-          description: `Unfortunately, ${username} no longer appears active in ${guild.name}. **Close** this channel with 'w close *reason*'.`,
+          description: `:no_entry_sign: Unfortunately, ${username} no longer appears active in ${guild.name}. **Close** this channel with 'w close *reason*'.`,
         })
         .reply(msg);
     }
@@ -83,31 +88,38 @@ class WaffleMail {
           guild
         )
       )
-      .then((userController) => {
-        const wr = new WaffleResponse();
-        return userController.author
-          .send(`**${msg.member.displayName}**: ${msg.content}`)
-          .then(() => {
-            // Feedback on mod channel to let staff know that message went through
-            wr.setEmbeddedResponse({
-              description: `:white_check_mark: message sent to ${userController.author.username}`,
-            }).reply(msg);
-          })
-          .catch((err) =>
-            wr
-              .setError(err)
-              .setEmbeddedResponse({
-                description: `Unable to DM ${userController.author.name}. Here was the error: ${err}`,
-              })
-              .reply(msg)
-          );
-      })
+      .then((userController) => this._handleStaffMsgToUser(msg, userController))
       .catch((err) =>
         // Catches failure to intialize a DM channel
         new WaffleResponse()
           .setError(err)
           .setEmbeddedResponse({
-            description: `🚫 Could not instantiate a DM channel with ${username}.\nLikely, the user is confirming an operation with WaffleMail at this very moment.`,
+            description: `:no_entry_sign: Could not instantiate a DM channel with ${username}.\nLikely, the user is confirming an operation with WaffleMail at this very moment.`,
+          })
+          .reply(msg)
+      );
+  }
+
+  _handleStaffMsgToUser(msg, userController) {
+    const { member: staffGuildMember, content } = msg;
+    const { author: dmUser } = userController;
+    const deletePromise = msg.delete().catch((err) => console.log(err));
+    const staffReply = `**${staffGuildMember.displayName}**: ${content}`;
+    return Promise.all([deletePromise, dmUser.send(staffReply)])
+      .then(() =>
+        // Feedback on mod channel to let staff know that message went through
+        new WaffleResponse()
+          .setEmbeddedResponse({
+            description: `:crown: ${zeroWidthSpaceChar} ${staffReply}`,
+          })
+          .reply(msg)
+      )
+      .catch((err) =>
+        // Catches failure to send a DM
+        new WaffleResponse()
+          .setError(err)
+          .setEmbeddedResponse({
+            description: `:no_entry_sign: ${zeroWidthSpaceChar} ${staffReply}\n\n**Unable to DM ${dmUser.name} due to error: ${err}**`,
           })
           .reply(msg)
       );
