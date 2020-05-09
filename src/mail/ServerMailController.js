@@ -136,7 +136,6 @@ class ServerMailController {
     const { dmChannel } = userControl;
     const sharedGuildArray = [...sharedGuilds.values()];
     const title = "Welcome to WaffleMail!";
-    console.log(this.client.user.displayAvatarURL());
     const thumbnail = {
       url: this.client.user.displayAvatarURL({ dynamic: true, size: 128 }),
     };

@@ -55,14 +55,14 @@ class WaffleMongo {
     this.collectionName = collectionName;
   }
 
-  _getCollection() {
+  getCollection() {
     return getSafe(() =>
       WaffleMongo._getDatabase().collection(this.collectionName)
     );
   }
 
   find(findArgs, opts = null) {
-    const collection = this._getCollection();
+    const collection = this.getCollection();
     if (collection) {
       return collection
         .find(findArgs, opts)
@@ -75,8 +75,19 @@ class WaffleMongo {
     return Promise.reject("No collection");
   }
 
+  findOne(findArgs, fieldsToReturn = null) {
+    const collection = this.getCollection();
+    if (collection) {
+      return collection.findOne(findArgs, fieldsToReturn).catch((err) => {
+        console.log("Error performing find: ", err);
+        throw err;
+      });
+    }
+    return Promise.reject("No collection");
+  }
+
   insertOne(insertArgs) {
-    const collection = this._getCollection();
+    const collection = this.getCollection();
     if (collection) {
       return collection
         .insertOne(insertArgs)
@@ -90,7 +101,7 @@ class WaffleMongo {
   }
 
   insertOneIfNotExists(findArgs, insertArgs) {
-    const collection = this._getCollection();
+    const collection = this.getCollection();
     if (!collection) {
       return Promise.reject("No collection");
     }
@@ -132,7 +143,7 @@ class WaffleMongo {
   }
 
   updateOne(filter, updateArgs) {
-    const collection = this._getCollection();
+    const collection = this.getCollection();
     if (!collection) {
       return Promise.reject("No collection");
     }
@@ -141,6 +152,34 @@ class WaffleMongo {
       .then((res) => res.result)
       .catch((err) => {
         console.log("updateOne err: ", err);
+        throw err;
+      });
+  }
+
+  updateOneOrInsert(filter, updateArgs) {
+    const collection = this.getCollection();
+    if (!collection) {
+      return Promise.reject("No collection");
+    }
+    return collection
+      .updateOne(filter, updateArgs, { upsert: true })
+      .then((res) => res.result)
+      .catch((err) => {
+        console.log("updateOneOrInsert err: ", err);
+        throw err;
+      });
+  }
+
+  deleteOne(filter) {
+    const collection = this.getCollection();
+    if (!collection) {
+      return Promise.reject("No collection");
+    }
+    return collection
+      .remove(filter, true)
+      .then((res) => res)
+      .catch((err) => {
+        console.log("delete err: ", err);
         throw err;
       });
   }

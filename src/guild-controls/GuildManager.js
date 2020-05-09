@@ -14,6 +14,7 @@ class GuildManager {
 
   static init(discordClient) {
     GuildManager.discordClient = discordClient;
+    GuildManager.guildSettingsData = 
     GuildManager.guildSettings = new WaffleMongo("guildSettings");
     const defaultGuildSettings = {
       /* 
@@ -69,8 +70,8 @@ class GuildManager {
       .then(() => {
         const title = "Congrats! Bots have been royally screwed!";
         const description =
-          `All bot messages will now :bomb: **self-destruct** :bomb: after 5 seconds from #${msg.channel.name}.` +
-          `\nTo undo this change, please type **w unscrewbots**.\n` +
+          `All bot messages are set to :boom: ***self-destruct*** :boom: after 5 seconds from #${msg.channel.name}.` +
+          `\nTo undo this change, use **w unscrewbots**.\n` +
           `\n*This has been a message from your friendly neighborhood bomber-bot.* ***Goodbye!***`;
         new WaffleResponse()
           .setEmbeddedResponse({ title, description })
