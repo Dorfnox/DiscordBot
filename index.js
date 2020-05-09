@@ -2,8 +2,7 @@ const Discord = require("discord.js");
 
 const MessageHandler = require("./src/message/MessageHandler");
 const WaffleMongo = require("./src/data-layer/WaffleMongo");
-const GuildSettingsData = require("./src/data-layer/GuildSettingsData");
-const GuildManager = require("./src/guild-controls/GuildManager");
+const GuildSettingsManager = require("./src/data-managers/GuildSettingsManager");
 const { token } = require("./configWaffleBot.json").init;
 
 const discordClient = new Discord.Client();
@@ -12,9 +11,11 @@ const messageHandler = new MessageHandler(discordClient);
 discordClient.on("ready", () => {
   console.log("Bot has logged in.");
   WaffleMongo.connect().then((mongoClient) => {
-    console.log(`Mongo DB successfully connected: `, mongoClient.s.options.srvHost);
-    // GuildManager.init(discordClient);
-    const a = new GuildSettingsData();
+    console.log(
+      `Mongo DB successfully connected: `,
+      mongoClient.s.options.srvHost
+    );
+    GuildSettingsManager.init(discordClient);
   });
   discordClient.user.setPresence({ activity: { name: "", type: "" } });
 });

@@ -176,7 +176,7 @@ class WaffleMongo {
       return Promise.reject("No collection");
     }
     return collection
-      .remove(filter, true)
+      .deleteOne(filter)
       .then((res) => res)
       .catch((err) => {
         console.log("delete err: ", err);

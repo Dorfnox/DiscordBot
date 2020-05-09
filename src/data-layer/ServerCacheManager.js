@@ -39,23 +39,23 @@ class ServerCacheManager {
     );
   }
 
-  setToCollection(_id, documentData) {
-    documentData = { _id, ...documentData };
-    return this.mongoData
-      .updateOneOrInsert({ _id }, { $set: documentData })
-      .then(() => documentData);
-  }
-
   setToCache(_id, documentData) {
     this.documentCache.set(_id, documentData);
     return Promise.resolve(documentData);
+  }
+
+  setToCollection(_id, documentData) {
+    documentData = { _id, ...documentData };
+    console.log("document data", documentData);
+    return this.mongoData
+      .updateOneOrInsert({ _id }, { $set: documentData })
+      .then(() => documentData);
   }
 
   /* DELETERS */
 
   delete(_id) {
     return this.deleteFromCollection(_id).then((res) => {
-      console.log("DELETED: ", res);
       return this.deleteFromCache(_id);
     });
   }
