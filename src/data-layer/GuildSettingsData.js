@@ -14,7 +14,6 @@ class GuildSettingsData extends ServerCacheManager {
 
   addBotBomberChannel(guildId, channelId) {
     return this.get(guildId).then((guildSettingsData) => {
-      console.log("Initial Get", guildSettingsData);
       const { removeBotFromChannelSet } = guildSettingsData;
       if (removeBotFromChannelSet.indexOf(channelId) === -1) {
         removeBotFromChannelSet.push(channelId);

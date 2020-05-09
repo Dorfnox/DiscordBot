@@ -46,7 +46,6 @@ class ServerCacheManager {
 
   setToCollection(_id, documentData) {
     documentData = { _id, ...documentData };
-    console.log("document data", documentData);
     return this.mongoData
       .updateOneOrInsert({ _id }, { $set: documentData })
       .then(() => documentData);
