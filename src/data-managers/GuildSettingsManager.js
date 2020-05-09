@@ -1,10 +1,6 @@
 const GuildSettingsData = require("../data-layer/GuildSettingsData");
 const WaffleResponse = require("../message/WaffleResponse");
-const {
-  addValueToMapSet,
-  deleteValueFromMapSet,
-  isStaff,
-} = require("../util/WaffleUtil");
+const { isStaff } = require("../util/WaffleUtil");
 
 class GuildSettingsManager {
   static init(discordClient) {
@@ -61,7 +57,7 @@ class GuildSettingsManager {
       });
   }
 
-  static shouldRemoveMsg(msg) {
+  static offerBotToTheWaffleBomberAsASacrifice(msg) {
     if (
       !this.ready ||
       !msg.author ||
@@ -69,12 +65,14 @@ class GuildSettingsManager {
       !msg.guild ||
       !msg.channel
     ) {
-      return Promise.resolve(false);
+      return;
     }
-    return this.guildSettingsData.isBotBomberInChannel(
-      msg.guild.id,
-      msg.channel.id
-    );
+    this.guildSettingsData
+      .isBotBomberInChannel(msg.guild.id, msg.channel.id)
+      .then((isInChannel) => {
+        isInChannel ? this.removeBotMessage(msg) : null;
+      })
+      .catch((err) => console.log(err));
   }
 
   static removeBotMessage(msg) {
@@ -116,7 +114,7 @@ class GuildSettingsManager {
       return false;
     } else if (!isStaff(msg.member)) {
       new WaffleResponse()
-        .setEmbeddedResponse({ description: `Only staff can do that!` })
+        .setEmbeddedResponse({ description: `Only staff members can do that!` })
         .reply(msg);
       return false;
     }

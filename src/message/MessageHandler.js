@@ -253,12 +253,9 @@ class MessageHandler {
       return this.waffleMail.handleModChannel(msg);
     }
 
-    // Handle Guild admin-controlled operations
+    // Handle Guild admin-controlled operations here
     if (isBot) {
-      GuildSettingsManager.shouldRemoveMsg(msg).then((isInChannel) => {
-        isInChannel ? GuildSettingsManager.removeBotMessage(msg) : null;
-      });
-      return;
+      return GuildSettingsManager.offerBotToTheWaffleBomberAsASacrifice(msg);
     }
 
     // From this point forward, we ignore bot messages
@@ -266,6 +263,7 @@ class MessageHandler {
       return;
     }
 
+    // Parse out arguments
     const args = content.trim().split(/\s+/);
 
     // Escape if not equal to the prefix
