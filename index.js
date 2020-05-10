@@ -3,6 +3,7 @@ const Discord = require("discord.js");
 const MessageHandler = require("./src/message/MessageHandler");
 const WaffleMongo = require("./src/data-layer/WaffleMongo");
 const GuildSettingsManager = require("./src/data-managers/GuildSettingsManager");
+const WaffleMusic = require("./src/music/WaffleMusic2");
 const { token } = require("./configWaffleBot.json").init;
 
 const discordClient = new Discord.Client();
@@ -16,6 +17,7 @@ discordClient.on("ready", () => {
       mongoClient.s.options.srvHost
     );
     GuildSettingsManager.init(discordClient);
+    WaffleMusic.init(discordClient);
   });
   discordClient.user.setPresence({ activity: { name: "", type: "" } });
 });

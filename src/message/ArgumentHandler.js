@@ -2,67 +2,78 @@ const { prefixes } = require("../../configWaffleBot").chat;
 
 class ArgumentHandler {
   static removeArgs(argString, numArgsToRemove) {
-    return argString.split(/\s/g).filter(i => i).slice(numArgsToRemove).join(" ");
+    return argString
+      .split(/\s/g)
+      .filter((i) => i)
+      .slice(numArgsToRemove)
+      .join(" ");
   }
 
-  constructor(prefixArray = prefixes, unmappedArgFunc = () => {}) {
+  static argStrToArray(argString) {
+    return argString.split(/\s/g).filter((i) => i);
+  }
+
+  constructor(prefixArray = prefixes) {
     this.argMap = new Map();
     this.lengthArray = [];
-    this.largestCmdLength = 0;
     this.prefixSet = new Set(prefixArray);
-    this.unmappedArgFunc = unmappedArgFunc;
   }
 
-  addCmds(args, cmdFunc = null) {
+  addCmds(args, value = null) {
     if (!Array.isArray(args)) {
       return this.addCmd(args);
     }
-    args.forEach((a) => this.addCmd(a, cmdFunc));
+    args.forEach((a) => this.addCmd(a, value));
     return this;
   }
 
   // A command can be a string 'example' or multiple words 'this should all be executable'
-  addCmd(cmd, cmdFunc = null) {
+  addCmd(cmd, cmdValue = null) {
     const args = cmd.split(/\s/g).filter((item) => item);
     if (!this.argMap.has(args.length)) {
-      // Set argMap to: Map<argsLen, Map<cmd, cmdFunc>>
+      // Set argMap to: Map<argsLen, Map<cmd, value>>
       this.argMap.set(args.length, new Map());
       this.lengthArray.push(args.length);
       this.lengthArray.sort((a, b) => a - b);
-      this.largestCmdLength = Math.max(args.length, this.largestCmdLength);
     }
-    // Returns a Map<cmd, cmdFunc>
+    // Returns a Map<cmd, value>
     const cmdMap = this.argMap.get(args.length);
     const key = args.map((a) => a.replace(/\s/g, "").toLowerCase()).join("_");
     if (cmdMap.has(key)) {
       throw `Arguments must be unique. ${key} is duplicated!`;
     }
-    cmdMap.set(key, cmdFunc);
+    cmdMap.set(key, cmdValue);
     return this;
   }
 
   // Optionally, returns the length of how many arguments in the string were parsed.
-  hasArgument(argArray, includesPrefix = false) {
+  parseArguments(argArray, includesPrefix = false) {
+    const result = { parseLength: 0, exists: false, value: undefined };
     if (!argArray || !argArray.length) {
-      return 0;
+      return result;
     }
     if (!Array.isArray(argArray)) {
       argArray = argArray.split(/\s/g);
     }
     argArray = argArray.filter((i) => i).map((a) => a.toLowerCase());
-    let prefixParsed = 0;
     if (includesPrefix) {
       if (!this.hasPrefix(argArray[0])) {
-        return 0;
+        return result;
       }
       argArray = argArray.slice(1);
-      prefixParsed++;
+      result.parseLength += 1;
     }
+
     // Parse from lowest -> highest (greedy match)
-    const cmdsParsed = this.lengthArray.find((l) =>
-      this.argMap.get(l).has(argArray.slice(0, l).join("_"))
-    );
-    return cmdsParsed ? cmdsParsed + prefixParsed : 0;
+    this.lengthArray.some((l) => {
+      const key = argArray.slice(0, l).join("_");
+      const cmdMap = this.argMap.get(l);
+      result.exists = cmdMap.has(key);
+      result.value = cmdMap.get(key);
+      result.parseLength += result.exists ? l : 0;
+      return result.exists;
+    });
+    return result;
   }
 
   hasPrefix(argArray) {

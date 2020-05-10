@@ -9,6 +9,12 @@ class ServerCacheManager {
     this.mongoData = new WaffleMongo(collectionName);
   }
 
+  /* HAS-SERS */
+
+  hasInCache(_id) {
+    return this.documentCache.has(_id);
+  }
+
   /* GETTERS */
   get(_id) {
     return this.getFromCache(_id).then((documentData) => {

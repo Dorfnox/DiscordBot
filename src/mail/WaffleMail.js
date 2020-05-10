@@ -47,7 +47,7 @@ class WaffleMail {
 
   handleModChannel(msg) {
     // First figure out the user to DM
-    const { channel, guild } = msg;
+    const { channel, guild, content } = msg;
     const user = channel.name.slice(0, WaffleMail.channelSliceLength);
     const discriminator = user.slice(
       user.length - WaffleMail.discriminatorLength,
@@ -63,12 +63,9 @@ class WaffleMail {
         m.user.discriminator === discriminator
     );
     // Check if we should close the channel
-    const argsParsed = this.closeChannelArgHandler.hasArgument(
-      msg.content,
-      true
-    );
-    if (argsParsed) {
-      const reason = ArgumentHandler.removeArgs(msg.content, argsParsed);
+    const pRes = this.closeChannelArgHandler.parseArguments(content, true);
+    if (pRes.exists) {
+      const reason = ArgumentHandler.removeArgs(content, pRes.parseLength);
       return this._closeChannel(msg, guildMember, reason);
     }
     if (!guildMember) {

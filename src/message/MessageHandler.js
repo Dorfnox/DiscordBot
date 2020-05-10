@@ -3,11 +3,13 @@ const Discord = require("discord.js");
 const GatsScraper = require("../gats/GatsScraper");
 const GenericResponse = require("../message/GenericResponse");
 const WaffleMusic = require("../music/WaffleMusic");
+const WaffleMusic2 = require("../music/WaffleMusic2");
 const Pokemon = require("../pokemon/Pokemon");
 const WaffleMail = require("../mail/WaffleMail");
 const OwnerCommands = require("../owner/OwnerCommands");
 const GuildSettingsManager = require("../data-managers/GuildSettingsManager");
 const WaffleResponse = require("./WaffleResponse");
+const ArgumentHandler = require("./ArgumentHandler");
 const {
   arrayFromObjectValues,
   randomFromArray,
@@ -25,6 +27,24 @@ class MessageHandler {
     this.pokemon = new Pokemon();
     this.waffleMail = new WaffleMail(client);
     this.ownerCommands = new OwnerCommands(client);
+    this.cmdHandler = new ArgumentHandler().addCmds(
+      [
+        "play",
+        "p",
+        "pause",
+        "queue",
+        "q",
+        "oops",
+        "join",
+        "j",
+        "leave",
+        "l",
+        "skip",
+        "song",
+        "unpause",
+      ],
+      (msg, args) => WaffleMusic2.executeMusicCmd(msg, args)
+    );
     this.helpCategory = {
       admin: {
         name: "Admin",
@@ -261,6 +281,15 @@ class MessageHandler {
     // From this point forward, we ignore bot messages
     if (!content) {
       return;
+    }
+
+    const pRes = this.cmdHandler.parseArguments(content, true);
+    if (pRes.exists) {
+      try {
+        return pRes.value(msg, ArgumentHandler.removeArgs(content, 1));
+      } catch (err) {
+        console.log(new Date().toUTCString(), 'Unhandled Exception: ', err);
+      }
     }
 
     // Parse out arguments

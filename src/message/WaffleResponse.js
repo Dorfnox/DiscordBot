@@ -1,9 +1,6 @@
-const { getSafe, randomFromArray } = require('../util/WaffleUtil');
+const { getSafe, randomWaffleColor } = require('../util/WaffleUtil');
 
 class WaffleResponse {
-
-    // Waffle colour spectrum
-    colors = [0x8B5F2B, 0x986C33, 0xA5793D, 0xB08646, 0xBB9351, 0xC69D4E, 0xD0A74B, 0xD9B249, 0xE2BE47, 0xEBCA46, 0xF3D745];
 
     constructor(response) {
         this.response = response || '';
@@ -18,7 +15,7 @@ class WaffleResponse {
 
     setEmbeddedResponse(options = {}) {
         const defaultOptions = {
-            color: randomFromArray(this.colors),
+            color: randomWaffleColor(),
         }
         const embed = Object.assign(defaultOptions, options);
         this.response = { embed };

@@ -44,7 +44,7 @@ function dynamicStrSpaceFill(str, longestStrLen) {
   return str;
 }
 
-function getNumberFromArguments(argString, isPositive=false) {
+function getNumberFromArguments(argString, isPositive = false) {
   return getSafe(() => {
     const matches = argString.match(/\d+/);
     if (matches === null) {
@@ -70,7 +70,11 @@ function getSafe(fn, defaultVal = null, errCallback = null) {
 }
 
 function isStaff(guildMember) {
-  return !guildMember.user.bot && (guildMember.hasPermission('KICK_MEMBERS') || guildMember.hasPermission('ADMINISTRATOR'));
+  return (
+    !guildMember.user.bot &&
+    (guildMember.hasPermission("KICK_MEMBERS") ||
+      guildMember.hasPermission("ADMINISTRATOR"))
+  );
 }
 
 function randomFromArray(myArray) {
@@ -83,16 +87,43 @@ function randomMusicEmoji() {
   return randomFromArray([..."🎸🎹🎺🎻🎼🎷🥁🎧🎤"]);
 }
 
-function retry(fn, retries = 3, err = null) {
-  if (!retries) {
-    return Promise.reject(err);
-  }
-  return fn().catch((err) => {
-    return retry(fn, retries - 1, err);
-  });
+function randomWaffleColor() {
+  return randomFromArray(waffleColorSpectrum);
+}
+
+function retry(fn, retries = 3, timeoutMilliseconds = 0, err = null) {
+  return fn().catch(
+    (err) =>
+      new Promise((resolve, reject) => {
+        if (!--retries) {
+          reject(err);
+        }
+        const run = () =>
+          retry(fn, retries, timeoutMilliseconds, err).then((res) => {
+            resolve(res);
+          });
+        return timeoutMilliseconds
+          ? setTimeout(run, timeoutMilliseconds)
+          : run();
+      })
+  );
 }
 
 zeroWidthSpaceChar = "\u200b";
+
+waffleColorSpectrum = [
+  0x8b5f2b,
+  0x986c33,
+  0xa5793d,
+  0xb08646,
+  0xbb9351,
+  0xc69d4e,
+  0xd0a74b,
+  0xd9b249,
+  0xe2be47,
+  0xebca46,
+  0xf3d745,
+];
 
 module.exports = {
   addValueToMapSet,
@@ -105,6 +136,8 @@ module.exports = {
   isStaff,
   randomFromArray,
   randomMusicEmoji,
+  randomWaffleColor,
   retry,
+  waffleColorSpectrum,
   zeroWidthSpaceChar,
 };
