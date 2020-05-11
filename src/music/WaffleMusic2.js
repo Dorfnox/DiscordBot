@@ -196,6 +196,7 @@ class WaffleMusic {
   }
 
   static _play(guildId, guildMember, textChannel, info) {
+    console.log('_PLAY');
     // Attempt to queue song
     const qc = this._getQueueContract(guildId);
     const { musicQueue } = qc;
@@ -224,6 +225,7 @@ class WaffleMusic {
   }
 
   static _playQueue(guildId) {
+    console.log("_playQUEUE");
     const qc = this._getQueueContract(guildId);
     if (qc.selfDestructTimeout) {
       clearTimeout(qc.selfDestructTimeout);
@@ -237,6 +239,8 @@ class WaffleMusic {
       quality: "highestaudio",
       highWaterMark: 1 << highWaterMarkBitShift,
     }); /* ~4mbs */
+
+    console.log("READABLE_STREAM", readableStream);
 
     connection
       .play(readableStream, { highWaterMark: 1 })
