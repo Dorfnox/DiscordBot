@@ -449,6 +449,7 @@ class WaffleMusic {
       return this._getYTInfoViaLink(ytLink);
     }
     // String provided
+    console.log('GetInfoviaString');
     return this._getYTInfoViaString(args);
   }
 
@@ -456,7 +457,11 @@ class WaffleMusic {
     if (!ytdl.validateURL(ytLink)) {
       throw `⚠️ Invalid url **${ytLink}** - Imma need some valid blueberries, bruh!`;
     }
-    return ytdl.getInfo(ytLink);
+    console.log('Getting Info');
+    return ytdl.getInfo(ytLink).catch(err => {
+      console.log('Got err', err);
+      throw err;
+    });
   }
 
   static _getYTInfoViaString(argString) {
