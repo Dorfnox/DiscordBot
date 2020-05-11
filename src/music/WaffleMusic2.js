@@ -45,6 +45,7 @@ class WaffleMusic {
       pRes
         .value(msg, musicArgs)
         .then((res) => {
+          console.log("RES", res);
           if (res) {
             new WaffleResponse()
               .setEmbeddedResponse(
