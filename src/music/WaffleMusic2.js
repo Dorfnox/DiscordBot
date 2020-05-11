@@ -240,11 +240,10 @@ class WaffleMusic {
       highWaterMark: 1 << highWaterMarkBitShift,
     }); /* ~4mbs */
 
-    console.log("READABLE_STREAM", readableStream);
-
     connection
       .play(readableStream, { highWaterMark: 1 })
       .on("start", () => {
+        console.log('START', )
         this.discordClient.user.setPresence({
           activity: { name: `${videoTitle} 🎧`, type: "PLAYING", url: ytLink },
         });
@@ -543,6 +542,7 @@ class WaffleMusic {
       },
       fields,
     };
+    console.log(embeddedMessage);
     return embeddedMessage;
   }
 
