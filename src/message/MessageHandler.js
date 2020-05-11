@@ -32,9 +32,10 @@ class MessageHandler {
         "play",
         "p",
         "pause",
+        "unpause",
+        "up",
         "queue",
         "q",
-        "oops",
         "join",
         "j",
         "leave",
@@ -44,8 +45,10 @@ class MessageHandler {
         "end",
         "finish",
         "repeat",
+        "r",
         "song",
-        "unpause",
+        "oops",
+        "removelast"
       ],
       (msg, args) => WaffleMusic2.executeMusicCmd(msg, args)
     );
@@ -294,6 +297,7 @@ class MessageHandler {
       } catch (err) {
         console.log(new Date().toUTCString(), 'Unhandled Exception: ', err);
       }
+      return ;
     }
 
     // Parse out arguments

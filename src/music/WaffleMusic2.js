@@ -24,7 +24,12 @@ class WaffleMusic {
     .addCmds(["queue", "q"], (msg) => this.queue(msg))
     .addCmds(["skip", "stop", "end", "finish"], (msg, args) =>
       this.skip(msg, args)
-    );
+    )
+    .addCmds(["repeat", "r"], (msg) => this.repeat(msg))
+    .addCmds(["song"], (msg) => this.song(msg))
+    .addCmds(["oops", "removelast"], (msg) => this.oops(msg))
+    .addCmds(["pause"], (msg) => this.pause(msg))
+    .addCmds(["unpause", "up"], (msg) => this.unpause(msg));
 
   static init(discordClient) {
     this.discordClient = discordClient;
@@ -77,7 +82,7 @@ class WaffleMusic {
       );
     }
 
-    const qc = this._getQueueContract(guild.id);
+    const qc = this._getQueueContract(guildId);
     if (qc) {
       if (qc.isPaused) {
         return Promise.resolve(
@@ -115,7 +120,8 @@ class WaffleMusic {
 
   static leave(msg) {
     const { guild } = msg;
-    const qc = this._getQueueContract(guild.id);
+    const { id: guildId } = guild;
+    const qc = this._getQueueContract(guildId);
     if (!qc) {
       return Promise.resolve(
         ":person_shrugging: There's no voice channel to leave"
@@ -128,7 +134,7 @@ class WaffleMusic {
         );
       }
     }
-    return this._leave(guild.id);
+    return this._leave(guildId);
   }
 
   static _leave(guildId) {
@@ -150,11 +156,11 @@ class WaffleMusic {
   }
 
   static play(msg, args) {
-    const uivc = this._verifyUserIsInVoiceChannel(msg.member);
+    const { guild, member, channel: textChannel } = msg;
+    const uivc = this._verifyUserIsInVoiceChannel(member);
     if (uivc.err) {
       return Promise.resolve(uivc.message);
     }
-    const { guild, member, channel: textChannel } = msg;
     const { channel: userVoiceChannel } = member.voice;
     const { id: guildId } = guild;
     const qc = this._getQueueContract(guildId);
@@ -168,53 +174,51 @@ class WaffleMusic {
         // return resolve(wr.setResponse(`*unpaused ${videoTitle}*`));
       }
       return Promise.resolve(
-        "To play music, please provide a **YouTube link** or **type a search query**"
+        ":headphones: To play music, please provide a :link: **YouTube link** or :keyboard: **type a search query**"
       );
     }
 
+    const playExecutor = () =>
+      this._getYTInfo(args)
+        .then((info) => this._play(guildId, member, textChannel, info))
+        .catch((err) => {
+          // Catch any getYTInfo errors
+          console.log("PLAY err:", err);
+          return Promise.resolve("⚠️ *unknown error occurred*");
+        });
     // Join a channel if no queue contract exists
     if (!qc) {
-      return this._join(guildId, userVoiceChannel).then(() =>
-        this._play(guildId, member, textChannel, args)
-      );
+      return this._join(guildId, userVoiceChannel).then(() => playExecutor());
     }
     // Play music
-    return this._play(guildId, member, textChannel, args);
+    return playExecutor();
   }
 
-  static _play(guildId, guildMember, textChannel, searchText) {
-    return this._getYTInfo(searchText)
-      .then((info) => {
-        // Attempt to queue song
-        const qc = this._getQueueContract(guildId);
-        const { musicQueue } = qc;
-        const queueItem = new QueueItem(info, guildMember, textChannel);
-        return musicQueue
-          .queue(queueItem)
-          .then(() => {
-            if (musicQueue.length() === 1) {
-              // Initiate recursive play
-              this._playQueue(guildId);
-              return;
-            }
-            const { videoTitle, videoId, guildMemberDisplayName } = queueItem;
-            const header = `Queued in position #${musicQueue.length() - 1}`;
-            return this._buildEmbeddedVideoMessage(
-              guildId,
-              header,
-              videoTitle,
-              videoId,
-              guildMemberDisplayName
-            );
-          })
-          .catch((err) => {
-            // Catch any queueing validation errors and return them.
-            return err;
-          });
+  static _play(guildId, guildMember, textChannel, info) {
+    // Attempt to queue song
+    const qc = this._getQueueContract(guildId);
+    const { musicQueue } = qc;
+    const queueItem = new QueueItem(info, guildMember, textChannel);
+    return musicQueue
+      .queue(queueItem)
+      .then(() => {
+        if (musicQueue.length() === 1) {
+          // Initiate recursive play
+          return this._playQueue(guildId);
+        }
+        const { videoTitle, videoId, guildMemberDisplayName } = queueItem;
+        const header = `Queued in position #${musicQueue.length() - 1}`;
+        return this._buildEmbeddedVideoMessage(
+          guildId,
+          header,
+          videoTitle,
+          videoId,
+          guildMemberDisplayName
+        );
       })
       .catch((err) => {
-        console.log("PLAY err:", err);
-        throw "⚠️ *unknown error occurred*";
+        // Catch any queueing validation errors and return them.
+        return err;
       });
   }
 
@@ -245,15 +249,15 @@ class WaffleMusic {
           .catch((err) => console.log(err));
       })
       .on("finish", () => {
-        this._playOnFinish(guildId);
+        this._playFinish(guildId);
       })
       .on("error", (err) => {
         console.log("DISPATCHER_ERROR: ", err);
-        this._playOnFinish(guildId);
+        this._playFinish(guildId);
       });
   }
 
-  static _playOnFinish(guildId) {
+  static _playFinish(guildId) {
     const qc = this._getQueueContract(guildId);
     if (!qc) {
       return;
@@ -338,12 +342,70 @@ class WaffleMusic {
     } else {
       try {
         qc.endCurrentSong();
-        return Promise.resolve(`🗑 The current song **${videoTitle}** has been skipped.`);
+        return Promise.resolve(
+          `🗑 The current song **${videoTitle}** has been skipped.`
+        );
       } catch (err) {
         console.log(err);
       }
     }
     return Promise.resolve();
+  }
+
+  static repeat(msg) {
+    const { guild, member, channel: textChannel } = msg;
+    const { id: guildId } = guild;
+    const uivc = this._verifyUserIsInVoiceChannel(member);
+    if (uivc.err) {
+      return Promise.resolve(uivc.message);
+    }
+
+    const qc = this._getQueueContract(guildId);
+    if (!qc || qc.musicQueue.isEmpty()) {
+      return Promise.resolve(":person_shrugging: There's nothing to repeat.");
+    }
+
+    const queueItem = qc.musicQueue.peek();
+    return this._play(guildId, member, textChannel, queueItem.info);
+  }
+
+  static song(msg) {
+    const { guild } = msg;
+    const { id: guildId } = guild;
+    const qc = this._getQueueContract(guildId);
+    if (!qc || qc.musicQueue.isEmpty()) {
+      return Promise.resolve(":person_shrugging: There are no songs currently playing.");
+    }
+    return Promise.resolve(this._buildEmbeddedQueueMessage(guildId, false));
+  }
+
+  static oops(msg) {
+    const { member, guild } = msg;
+    const { id: guildMemberId } = member;
+    const { id: guildId } = guild;
+    const qc = this._getQueueContract(guildId);
+    if (qc && qc.musicQueue.length()) {
+      const queue = qc.musicQueue.getQueue();
+      let queuePosition = -1;
+      for (let i = queue.length - 1 ; i >= 0 ; i-- ) {
+          if (queue[i].guildMemberId === guildMemberId) {
+              queuePosition = i;
+              break;
+          }
+      }
+      if (queuePosition !== -1) {
+        return this._skip(guildId, queuePosition);
+      }
+    }
+    return Promise.resolve(`😕 You have nothing to be oopsy about.`);
+  }
+
+  static pause(msg) {
+    return Promise.resolve('Feature is coming soon :tm:');
+  }
+
+  static unpause(msg) {
+    return Promise.resolve('Feature is coming soon :tm:');
   }
 
   /* ~~~~~~~~~~~~~~~~~~ QUEUE CONTRACT HANDLERS ~~~~~~~~~~~~~~~~~~~ */
@@ -391,9 +453,7 @@ class WaffleMusic {
 
   static _getYTInfoViaLink(ytLink) {
     if (!ytdl.validateURL(ytLink)) {
-      return Promise.resolve(
-        `Invalid url '${ytLink}'. Imma need some valid blueberries, bruh!`
-      );
+      throw `⚠️ Invalid url **${ytLink}** - Imma need some valid blueberries, bruh!`;
     }
     return ytdl.getInfo(ytLink);
   }
@@ -405,8 +465,7 @@ class WaffleMusic {
         .then((res) => getSafe(() => res.videos || [], []))
         .then((videos) => {
           if (!videos || !videos[0]) {
-            console.error(`__E: No videos found... retrying`);
-            throw "no videos found";
+            throw "⚠️ no videos found";
           }
           return videos;
         });
