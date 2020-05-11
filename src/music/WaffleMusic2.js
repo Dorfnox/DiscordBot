@@ -553,7 +553,7 @@ class WaffleMusic {
         .map((r, i) => {
           return {
             name: `#${i + 1} ~ by ${r.guildMemberDisplayName}`,
-            value: `${r.videoTitle}`,
+            value: `[${r.videoTitle}](https://www.youtube.com/watch?v=${videoId}`,
             inline: false,
           };
         });
