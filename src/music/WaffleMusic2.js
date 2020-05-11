@@ -197,7 +197,6 @@ class WaffleMusic {
   }
 
   static _play(guildId, guildMember, textChannel, info) {
-    console.log('_PLAY');
     // Attempt to queue song
     const qc = this._getQueueContract(guildId);
     const { musicQueue } = qc;
@@ -226,7 +225,6 @@ class WaffleMusic {
   }
 
   static _playQueue(guildId) {
-    console.log("_playQUEUE");
     const qc = this._getQueueContract(guildId);
     if (qc.selfDestructTimeout) {
       clearTimeout(qc.selfDestructTimeout);
@@ -241,26 +239,28 @@ class WaffleMusic {
       highWaterMark: 1 << highWaterMarkBitShift,
     }); /* ~4mbs */
 
-    connection
+    try {
+      connection
       .play(readableStream, { highWaterMark: 1 })
-      // .on("start", () => {
-      //   console.log('START')
-      //   this.discordClient.user.setPresence({
-      //     activity: { name: `${videoTitle} 🎧`, type: "PLAYING", url: ytLink },
-      //   });
-      //   const embeddedMessage = this._buildEmbeddedQueueMessage(guildId, false);
-      //   textChannel
-      //     .send({ embed: embeddedMessage })
-      //     .catch((err) => console.log(err));
-      // })
-      // .on("finish", () => {
-      //   console.log("DISPATCHER_FINISH: ", err);
-      //   this._playFinish(guildId);
-      // })
-      // .on("error", (err) => {
-      //   console.log("DISPATCHER_ERROR: ", err);
-      //   this._playFinish(guildId);
-      // });
+      .on("start", () => {
+        this.discordClient.user.setPresence({
+          activity: { name: `${videoTitle} 🎧`, type: "PLAYING", url: ytLink },
+        });
+        const embeddedMessage = this._buildEmbeddedQueueMessage(guildId, false);
+        textChannel
+          .send({ embed: embeddedMessage })
+          .catch((err) => console.log(err));
+      })
+      .on("finish", () => {
+        this._playFinish(guildId);
+      })
+      .on("error", (err) => {
+        console.log("DISPATCHER_ERROR: ", err);
+        this._playFinish(guildId);
+      })
+    } catch (err) {
+      console.log('ERR: ', err);
+    }
   }
 
   static _playFinish(guildId) {
