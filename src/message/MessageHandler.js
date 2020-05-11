@@ -27,31 +27,35 @@ class MessageHandler {
     this.pokemon = new Pokemon();
     this.waffleMail = new WaffleMail(client);
     this.ownerCommands = new OwnerCommands(client);
-    this.cmdHandler = new ArgumentHandler().addCmds(
-      [
-        "play",
-        "p",
-        "pause",
-        "unpause",
-        "up",
-        "queue",
-        "q",
-        "join",
-        "j",
-        "leave",
-        "l",
-        "skip",
-        "stop",
-        "end",
-        "finish",
-        "repeat",
-        "r",
-        "song",
-        "oops",
-        "removelast"
-      ],
-      (msg, args) => WaffleMusic2.executeMusicCmd(msg, args)
-    );
+    this.cmdHandler = new ArgumentHandler()
+      .addCmds(
+        [
+          "play",
+          "p",
+          "pause",
+          "unpause",
+          "up",
+          "queue",
+          "q",
+          "join",
+          "j",
+          "leave",
+          "l",
+          "skip",
+          "stop",
+          "end",
+          "finish",
+          "repeat",
+          "r",
+          "song",
+          "oops",
+          "removelast",
+        ],
+        (msg, args) => WaffleMusic2.executeMusicCmd(msg, args)
+      )
+      .addCmds(["drip", "drips", "dripz"], (msg) =>
+        this.genericResponse.drip(msg)
+      );
     this.helpCategory = {
       admin: {
         name: "Admin",
@@ -295,9 +299,9 @@ class MessageHandler {
       try {
         return pRes.value(msg, ArgumentHandler.removeArgs(content, 1));
       } catch (err) {
-        console.log(new Date().toUTCString(), 'Unhandled Exception: ', err);
+        console.log(new Date().toUTCString(), "Unhandled Exception: ", err);
       }
-      return ;
+      return;
     }
 
     // Parse out arguments

@@ -3,6 +3,10 @@ const { link: inviteLink, botImgUrl } = require("../../configWaffleBot").invite;
 const { getSafe, randomFromArray } = require("../util/WaffleUtil");
 
 class GenericResponse {
+  drip(msg) {
+    new WaffleResponse().setResponse("Driiiiiiiiiiiiip").reply(msg);
+  }
+  
   feed(msg) {
     new WaffleResponse().setResponse("OMNOMOMNOMOMNOM").reply(msg);
   }
