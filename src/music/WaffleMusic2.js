@@ -243,7 +243,7 @@ class WaffleMusic {
     connection
       .play(readableStream, { highWaterMark: 1 })
       .on("start", () => {
-        console.log('START', )
+        console.log('START')
         this.discordClient.user.setPresence({
           activity: { name: `${videoTitle} 🎧`, type: "PLAYING", url: ytLink },
         });
@@ -253,6 +253,7 @@ class WaffleMusic {
           .catch((err) => console.log(err));
       })
       .on("finish", () => {
+        console.log("DISPATCHER_FINISH: ", err);
         this._playFinish(guildId);
       })
       .on("error", (err) => {

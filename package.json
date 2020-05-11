@@ -14,7 +14,6 @@
     "cheerio": "^1.0.0-rc.3",
     "discord.js": "^12.2.0",
     "electron": "^8.2.5",
-    "ffmpeg": "0.0.4",
     "mongodb": "^3.5.7",
     "nightmare": "^3.0.2",
     "node-cache": "^5.1.0",
