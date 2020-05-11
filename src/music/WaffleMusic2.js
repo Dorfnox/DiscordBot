@@ -45,7 +45,6 @@ class WaffleMusic {
       pRes
         .value(msg, musicArgs)
         .then((res) => {
-          console.log("RES", res);
           if (res) {
             new WaffleResponse()
               .setEmbeddedResponse(
@@ -179,7 +178,6 @@ class WaffleMusic {
       );
     }
 
-    console.log('PLAYYY');
     const playExecutor = () =>
       this._getYTInfo(args)
         .then((info) => this._play(guildId, member, textChannel, info))
@@ -259,7 +257,7 @@ class WaffleMusic {
         this._playFinish(guildId);
       })
     } catch (err) {
-      console.log('ERR: ', err);
+      console.log('CONNECTION_PLAY_ERROR: ', err);
     }
   }
 
@@ -309,7 +307,6 @@ class WaffleMusic {
     }
 
     // Get provided position, if any
-    console.log(parseInt(args, 10) || 0);
     const queuePosition = Math.max(parseInt(args, 10) || 0, 0);
 
     // Verify there is a song at given queue position
@@ -352,7 +349,7 @@ class WaffleMusic {
           `🗑 The current song **${videoTitle}** has been skipped.`
         );
       } catch (err) {
-        console.log(err);
+        console.log("END_CURRENT_SONG_ERROR: ", err);
       }
     }
     return Promise.resolve();
@@ -454,7 +451,6 @@ class WaffleMusic {
       return this._getYTInfoViaLink(ytLink);
     }
     // String provided
-    console.log('GetInfoviaString');
     return this._getYTInfoViaString(args);
   }
 
@@ -462,9 +458,7 @@ class WaffleMusic {
     if (!ytdl.validateURL(ytLink)) {
       throw `⚠️ Invalid url **${ytLink}** - Imma need some valid blueberries, bruh!`;
     }
-    console.log('Getting Info');
     return ytdl.getInfo(ytLink).catch(err => {
-      console.log('Got err', err);
       throw err;
     });
   }
@@ -544,7 +538,6 @@ class WaffleMusic {
       },
       fields,
     };
-    console.log(embeddedMessage);
     return embeddedMessage;
   }
 
