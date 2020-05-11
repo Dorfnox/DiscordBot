@@ -178,6 +178,7 @@ class WaffleMusic {
       );
     }
 
+    console.log('PLAYYY');
     const playExecutor = () =>
       this._getYTInfo(args)
         .then((info) => this._play(guildId, member, textChannel, info))
