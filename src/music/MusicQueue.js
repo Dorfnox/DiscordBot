@@ -1,6 +1,22 @@
 const { decrementMaxMap } = require("../util/WaffleUtil");
 const config = require("../../configWaffleBot");
 
+class QueueContract {
+  constructor(voiceChannel, connection) {
+    this.voiceChannel = voiceChannel;
+    this.connection = connection;
+    this.musicQueue = new MusicQueue();
+    this.isPaused = false;
+    this.selfDestructTimeout = null;
+  }
+
+  endCurrentSong() {
+    if (this.connection.dispatcher) {
+      this.connection.dispatcher.end();
+    }
+  }
+}
+
 class QueueItem {
   constructor(info, guildMember, textChannel) {
     this.info = info;
@@ -69,6 +85,10 @@ class MusicQueue {
     return this.songQueue;
   }
 
+  getQueueItem(idx) {
+    return idx > this.songQueue.length - 1 ? null : this.songQueue[idx];
+  }
+
   dequeue() {
     return this.dequeueAt(0);
   }
@@ -119,6 +139,7 @@ class MusicQueue {
 }
 
 module.exports = {
-  MusicQueue,
+  QueueContract,
   QueueItem,
+  MusicQueue,
 };

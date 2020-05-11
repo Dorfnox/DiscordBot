@@ -12,60 +12,6 @@ class WaffleMusic {
         this.client = client;
     }
 
-    getSimpleQueue() {
-        if (this.musicQueue.isEmpty()) {
-            return [];
-        }
-        const queue = this.musicQueue.getQueue();
-        return queue.map(item => {
-            const { title, videoId } = item.info.player_response.videoDetails
-            const { author }  = item.msg;
-            return { title, videoId, author };
-        });
-    }
-
-    isInVoiceChannel() {
-        return this.client.voice && this.client.voice.connections.first();
-    }
-
-    join(msg, args) {
-        const wr = new WaffleResponse();
-        return wr.setResponse("Apologies, this command has been taken temporarily offline due to :waffle: **Dorfnox** :waffle: being too lazy to fix it.").reply(msg);
-        if (!args || !args[0]) {
-            return wr.setResponse('Please provide a valid voice channel name').reply(msg);
-        }
-        
-        const channelToJoin = args[0];
-        const validChannels = [];
-        // Find voice channel to join
-        msg.guild.channels.cache. forEach((channel, id) => {
-            if (channel.type === 'voice' && channel.name === channelToJoin) {
-                validChannels.push(channel);
-            }
-        });
-        if (!validChannels || !validChannels[0]) {
-            return wr.setResponse('Please provide an accurate voice channel name').reply(msg);
-        }
-
-        const dispatcher = this._getDispatcher();
-        if (dispatcher && dispatcher.paused) {
-            return wr.setResponse('Please Unpause me to join another channel (:waffle: unpause)').reply(msg);
-        }
-        validChannels[0].join()
-            .then(connection => {
-                connection.on('error', err => {
-                    return wr.setResponse(`⚠️ Connection Error occurred in ${channelToJoin}. You may have to use 'waffle join ${channelToJoin}' to join the voice channel again.`).setError(err).reply(msg);
-                });
-                connection.on('debug', d => {
-                    if (getSafe(() => !d.startsWith("[WS] >> {\"op\":3,\"d\"") && !d.startsWith("[WS] << {\"op\":6,\"d\""), true)) {
-                        console.log('VOICE_CONNECTION_DEBUG: ', d);
-                    }
-                });
-                wr.setResponse(`✅ ~ Successfully connected to channel '${channelToJoin}'!`).reply(msg);
-            })
-            .catch(err => wr.setResponse(`🚫 ~ Failed to connect to channel '${channelToJoin}'`).setError(err).reply(msg));
-    }
-
     pause(msg) {
         return new Promise(resolve => {
             return resolve(new WaffleResponse().setResponse("Apologies, this command has been taken temporarily offline due to :waffle: **Dorfnox** :waffle: being too lazy to fix it."));
@@ -78,35 +24,6 @@ class WaffleMusic {
             return resolve(this._pause());
         }).catch(err => {
             return new WaffleResponse('⚠️ *unknown error occurred*').setErrorLocale('pause').setError(err).setIsSendable(false);
-        });
-    }
-
-    play(msg, args, options = {}) {
-        return new Promise(resolve => {
-            options = Object.assign({
-                skipUserValidation: false,
-            }, options);
-            return resolve(new WaffleResponse().setResponse("Apologies, this command has been taken temporarily offline due to :waffle: **Dorfnox** :waffle: being too lazy to fix it."));
-
-            let wr = this._verifyInVoiceChannel(msg, options);
-            if (wr.isError) return resolve(wr);
-
-            // No argument provided
-            if (!args[0] || !args.join('')) {
-                // check if there's a song to unpause
-                const dispatcher = this._getDispatcher();
-                if (dispatcher && dispatcher.paused) {
-                    dispatcher.resume();
-                    const { title } = this.musicQueue.peek().info.player_response.videoDetails;
-                    return resolve(wr.setResponse(`*unpaused ${title}*`));
-                }
-                return resolve(wr.setResponse('*To play music, please provide a YouTube link or text*').setIsError(true));
-            }
-
-             // Play music
-             return this._getYTInfo(args).then(wr => resolve(wr.isError ? wr : this._play({ info: wr.response, msg })));
-        }).catch(err => {
-            return new WaffleResponse('⚠️ *unknown error occurred*').setErrorLocale('play').setError(err).setIsSendable(false);
         });
     }
 

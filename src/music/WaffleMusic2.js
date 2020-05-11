@@ -1,11 +1,12 @@
 const ytdl = require("ytdl-core");
 const yts = require("yt-search");
 
-const { MusicQueue, QueueItem } = require("./MusicQueue");
+const { QueueItem, QueueContract } = require("./MusicQueue");
 const WaffleResponse = require("../message/WaffleResponse");
 const ArgumentHandler = require("../message/ArgumentHandler");
 const {
   getSafe,
+  isStaff,
   randomMusicEmoji,
   randomWaffleColor,
   retry,
@@ -15,11 +16,15 @@ const { highWaterMarkBitShift } = require("../../configWaffleBot.json").music;
 
 class WaffleMusic {
   static discordClient = null;
-  static serverQueue = new Map(); // Map of guildId -> MusicQueue
+  static serverQueue = new Map(); // Map of guildId -> QueueContract
   static musicArgMap = new ArgumentHandler()
     .addCmds(["join", "j"], (msg, args) => this.join(msg, args))
     .addCmds(["leave", "l"], (msg) => this.leave(msg))
-    .addCmds(["play", "p"], (msg, args) => this.play(msg, args));
+    .addCmds(["play", "p"], (msg, args) => this.play(msg, args))
+    .addCmds(["queue", "q"], (msg) => this.queue(msg))
+    .addCmds(["skip", "stop", "end", "finish"], (msg, args) =>
+      this.skip(msg, args)
+    );
 
   static init(discordClient) {
     this.discordClient = discordClient;
@@ -58,7 +63,7 @@ class WaffleMusic {
       return Promise.resolve("Please provide a valid voice channel name");
     }
 
-    const { guild } = msg;
+    const { guild, member } = msg;
     const { id: guildId } = guild;
 
     // Find voice channel to join
@@ -82,9 +87,9 @@ class WaffleMusic {
         return Promise.resolve(
           `I'm already in **${voiceChannel.name}**, silly!`
         );
-      } else if (qc.musicQueue.length()) {
+      } else if (!isStaff(member) && qc.musicQueue.length()) {
         return Promise.resolve(
-          `Please wait until all songs have finished to join a different channel`
+          `Please wait until all songs have finished to join a different channel. Only staff can change channels while music is playing.`
         );
       }
     }
@@ -116,10 +121,12 @@ class WaffleMusic {
         ":person_shrugging: There's no voice channel to leave"
       );
     }
-    if (qc.musicQueue.length()) {
-      return Promise.resolve(
-        ":stopwatch: Please wait until all music has finished playing to leave"
-      );
+    if (!isStaff(msg.member)) {
+      if (qc.musicQueue.length()) {
+        return Promise.resolve(
+          ":stopwatch: Please wait until all music has finished playing to leave"
+        );
+      }
     }
     return this._leave(guild.id);
   }
@@ -127,6 +134,10 @@ class WaffleMusic {
   static _leave(guildId) {
     return new Promise((resolve) => {
       const qc = this._getQueueContract(guildId);
+      if (qc.selfDestructTimeout) {
+        clearTimeout(qc.selfDestructTimeout);
+        qc.selfDestructTimeout = null;
+      }
       qc.voiceChannel.leave();
       this._deleteQueueContract(guildId);
       resolve(
@@ -134,7 +145,7 @@ class WaffleMusic {
       );
     }).catch((err) => {
       console.log("LEAVE err: ", err);
-      throw `⚠️ ~ Failed to leave voice channel`;
+      throw `⚠️ An error occurred while leaving the voice channel.`;
     });
   }
 
@@ -183,7 +194,7 @@ class WaffleMusic {
           .then(() => {
             if (musicQueue.length() === 1) {
               // Initiate recursive play
-              this._playRecursively(guildId);
+              this._playQueue(guildId);
               return;
             }
             const { videoTitle, videoId, guildMemberDisplayName } = queueItem;
@@ -207,7 +218,7 @@ class WaffleMusic {
       });
   }
 
-  static _playRecursively(guildId) {
+  static _playQueue(guildId) {
     const qc = this._getQueueContract(guildId);
     if (qc.selfDestructTimeout) {
       clearTimeout(qc.selfDestructTimeout);
@@ -221,16 +232,6 @@ class WaffleMusic {
       quality: "highestaudio",
       highWaterMark: 1 << highWaterMarkBitShift,
     }); /* ~4mbs */
-
-    readableStream.on("error", (err) => {
-      console.log("READABLE_STREAM_ERROR: ", err);
-    });
-    readableStream.on("debug", (d) => {
-      console.log("READABLE_STREAM_DEBUG: ", d);
-    });
-    readableStream.on("close", (c) => {
-      console.log("READABLE_STREAM_CLOSE: ", c);
-    });
 
     connection
       .play(readableStream, { highWaterMark: 1 })
@@ -249,17 +250,14 @@ class WaffleMusic {
       .on("error", (err) => {
         console.log("DISPATCHER_ERROR: ", err);
         this._playOnFinish(guildId);
-      })
-      .on("debug", (d) => {
-        console.log("DISPATCHER_DEBUG: ", d);
-      })
-      .on("close", (c) => {
-        console.log("DISPATCHER_CLOSE: ", c);
       });
   }
 
   static _playOnFinish(guildId) {
     const qc = this._getQueueContract(guildId);
+    if (!qc) {
+      return;
+    }
     const { musicQueue } = qc;
     this.discordClient.user.setPresence({
       activity: { name: "", type: "" },
@@ -272,8 +270,80 @@ class WaffleMusic {
         120000
       );
     } else {
-      this._playRecursively(guildId);
+      this._playQueue(guildId);
     }
+  }
+
+  static queue(msg) {
+    const { id: guildId } = msg.guild;
+    const qc = this._getQueueContract(guildId);
+    if (!qc || qc.musicQueue.isEmpty()) {
+      return Promise.resolve(
+        ":person_shrugging: There are **0** songs in the queue"
+      );
+    }
+    return Promise.resolve(this._buildEmbeddedQueueMessage(guildId));
+  }
+
+  static skip(msg, args) {
+    const { guild, member } = msg;
+    const uivc = this._verifyUserIsInVoiceChannel(member);
+    if (uivc.err) {
+      return Promise.resolve(uivc.message);
+    }
+
+    const { id: guildId } = guild;
+    const qc = this._getQueueContract(guildId);
+    if (!qc || qc.musicQueue.isEmpty()) {
+      return Promise.resolve(":person_shrugging: There's nothing to skip.");
+    }
+
+    // Get provided position, if any
+    console.log(parseInt(args, 10) || 0);
+    const queuePosition = Math.max(parseInt(args, 10) || 0, 0);
+
+    // Verify there is a song at given queue position
+    if (queuePosition > qc.musicQueue.length() - 1) {
+      return Promise.resolve(
+        `🚫 No songs in queue position **#${queuePosition}**`
+      );
+    }
+
+    // Allow song removal if any of the following conditions are met:
+    // 1) Admins and moderators have default full permission
+    // 2) The song being removed is the requester's song
+    // 3) The original requester is no longer in the voice channel
+    const requesterId = qc.musicQueue.getQueue()[queuePosition].guildMemberId;
+    if (
+      isStaff(member) ||
+      member.id === requesterId ||
+      !qc.voiceChannel.members.has(requesterId)
+    ) {
+      return this._skip(guildId, queuePosition);
+    }
+
+    // Not allowed!
+    return Promise.resolve(`🚫 You don't have permission to do that`);
+  }
+
+  static _skip(guildId, queuePosition) {
+    // Remove from queue if queuePosition is specified
+    const qc = this._getQueueContract(guildId);
+    const { musicQueue } = qc;
+    const queueItem = musicQueue.getQueueItem(queuePosition);
+    const { videoTitle } = queueItem;
+    if (queuePosition > 0) {
+      musicQueue.dequeueAt(queuePosition);
+      return Promise.resolve(`🗑 removed **${videoTitle}** from the queue.`);
+    } else {
+      try {
+        qc.endCurrentSong();
+        return Promise.resolve(`🗑 The current song **${videoTitle}** has been skipped.`);
+      } catch (err) {
+        console.log(err);
+      }
+    }
+    return Promise.resolve();
   }
 
   /* ~~~~~~~~~~~~~~~~~~ QUEUE CONTRACT HANDLERS ~~~~~~~~~~~~~~~~~~~ */
@@ -287,22 +357,16 @@ class WaffleMusic {
   }
 
   static _createQueueContract(guildId, voiceChannel, connection) {
-    const queueContract = {
-      voiceChannel,
-      connection,
-      musicQueue: new MusicQueue(),
-      isPaused: false,
-      selfDestructTimeout: null,
-    };
+    const queueContract = new QueueContract(voiceChannel, connection);
     this.serverQueue.set(guildId, queueContract);
-    this._debugConnection(connection);
+    // this._debugConnection(connection);
     return queueContract;
   }
 
   static _updateQueueContract(guildId, options = {}) {
     const qc = this._getQueueContract(guildId);
     if (options.connection) {
-      this._debugConnection(options.connection);
+      // this._debugConnection(options.connection);
     }
     return Object.assign(qc, options);
   }
