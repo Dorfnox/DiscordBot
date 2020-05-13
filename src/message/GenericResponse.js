@@ -153,7 +153,7 @@ class GenericResponse {
 
   serverList(msg, args) {
     const guildNames = this.discordClient.guilds.cache.array().map(g => g.name);
-    const pageSize = 50;
+    const pageSize = 25;
     const pageCount = Math.ceil(guildNames.length / pageSize);
     const pageArg = Math.min(
       getNumberFromArguments(ArgumentHandler.removeArgs(args, 1)) || 1,
