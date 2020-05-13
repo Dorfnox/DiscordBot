@@ -1,12 +1,17 @@
 const WaffleResponse = require("./WaffleResponse");
+const ArgumentHandler = require("./ArgumentHandler");
 const { link: inviteLink, botImgUrl } = require("../../configWaffleBot").invite;
 const { getSafe, randomFromArray } = require("../util/WaffleUtil");
 
 class GenericResponse {
+  constructor(discordClient) {
+    this.discordClient = discordClient;
+  }
+
   drip(msg) {
     new WaffleResponse().setResponse("Driiiiiiiiiiiiip").reply(msg);
   }
-  
+
   feed(msg) {
     new WaffleResponse().setResponse("OMNOMOMNOMOMNOM").reply(msg);
   }
@@ -88,6 +93,53 @@ class GenericResponse {
       text = "Sorry, I'm not saying that... I don’t speak bullshit.";
     }
     new WaffleResponse().setResponse(text).reply(msg);
+  }
+
+  superSay(msg, args) {
+    const text = ArgumentHandler.removeArgs(args, 1);
+    if (!text) {
+      return;
+    }
+    msg
+      .delete()
+      .then(() => {
+        new WaffleResponse()
+          .setEmbeddedResponse({ description: text })
+          .reply(msg);
+      })
+      .catch((err) => {
+        console.log(err);
+        const description =
+          "⚠️ I don't have permission to remove your message ><";
+        new WaffleResponse().setEmbeddedResponse({ description }).reply(msg);
+      });
+  }
+
+  serverStats(msg) {
+    const { uptime, guilds, user } = this.discordClient;
+    const guildCount = guilds.cache.size;
+    const uptimeSeconds = (uptime || 0) / 1000;
+    const seconds = Math.floor(uptimeSeconds % 60);
+    const minutes = Math.floor((uptimeSeconds / 60) % 60);
+    const hours = Math.floor(uptimeSeconds / 3600);
+    const time = `${hours}h ${minutes}m ${seconds}s`;
+    const inline = true;
+
+    const thumbnail = {
+      url: user.displayAvatarURL({ size: 64 }),
+    };
+    const title = "WaffleBot Statistics";
+    const fields = [
+      { name: "# of Servers", value: guildCount, inline },
+      { name: "uptime", value: time, inline },
+    ];
+    new WaffleResponse()
+      .setEmbeddedResponse({
+        thumbnail,
+        title,
+        fields,
+      })
+      .reply(msg);
   }
 }
 

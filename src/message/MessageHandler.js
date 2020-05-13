@@ -21,7 +21,7 @@ const { modMailChannelCategoryName } = config.modMail;
 class MessageHandler {
   constructor(client) {
     this.client = client;
-    this.genericResponse = new GenericResponse();
+    this.genericResponse = new GenericResponse(client);
     this.waffleMusic = new WaffleMusic(client);
     this.gatsScraper = new GatsScraper();
     this.pokemon = new Pokemon();
@@ -55,6 +55,23 @@ class MessageHandler {
       )
       .addCmds(["drip", "drips", "dripz"], (msg) =>
         this.genericResponse.drip(msg)
+      )
+      .addCmds(
+        [
+          "server stats",
+          "serverstats",
+          "waffle stats",
+          "wafflesstats",
+          "waffle",
+          "w",
+          "🧇",
+        ],
+        (msg) => {
+          this.genericResponse.serverStats(msg);
+        }
+      )
+      .addCmds(["supersay", "super say", "ss"], (msg, args) =>
+        this.genericResponse.superSay(msg, args)
       );
     this.helpCategory = {
       admin: {

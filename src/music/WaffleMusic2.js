@@ -524,13 +524,13 @@ class WaffleMusic {
     const queueLen = qc.musicQueue.length() - 1;
     const queueLenStr =
       queueLen === 1 ? `is **1** song` : `are **${queueLen}** more songs`;
-    const description = `Requested by **${memberName}**. There ${queueLenStr} in the queue.`;
+    const description = `${emoji} Requested by **${memberName}**. There ${queueLenStr} in the queue.`;
     const embeddedMessage = {
       color: randomWaffleColor(),
       author: {
         name: header,
       },
-      title: `${videoTitle} ${emoji}`,
+      title: videoTitle,
       url: `https://www.youtube.com/watch?v=${videoId}`,
       description,
       thumbnail: {
@@ -553,14 +553,14 @@ class WaffleMusic {
         .map((r, i) => {
           return {
             name: `#${i + 1} ~ by ${r.guildMemberDisplayName}`,
-            value: `[${r.videoTitle}](https://www.youtube.com/watch?v=${videoId}`,
+            value: `[${r.videoTitle}](https://www.youtube.com/watch?v=${videoId})`,
             inline: false,
           };
         });
       if (fields.length) {
         fields.unshift({
           name: zeroWidthSpaceChar,
-          value: "***Music Queue***",
+          value: "**Music Queue**",
         });
       }
     }
