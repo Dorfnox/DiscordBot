@@ -77,6 +77,10 @@ function isStaff(guildMember) {
   );
 }
 
+function paginateArray(myArray, page, pageSize) {
+  return myArray.slice(pageSize * (page - 1), pageSize * page);
+}
+
 function randomFromArray(myArray) {
   return myArray.length > 0
     ? myArray[Math.floor(Math.random() * myArray.length)]
@@ -134,6 +138,7 @@ module.exports = {
   getNumberFromArguments,
   getSafe,
   isStaff,
+  paginateArray,
   randomFromArray,
   randomMusicEmoji,
   randomWaffleColor,

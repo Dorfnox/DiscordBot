@@ -56,19 +56,20 @@ class MessageHandler {
       .addCmds(["drip", "drips", "dripz"], (msg) =>
         this.genericResponse.drip(msg)
       )
+      .addCmds(["serverstats", "wafflesstats"], (msg) => {
+        this.genericResponse.serverStats(msg);
+      })
       .addCmds(
         [
-          "server stats",
-          "serverstats",
-          "waffle stats",
-          "wafflesstats",
-          "waffle",
-          "w",
-          "🧇",
+          "serverlist",
+          "serverslist",
+          "sl",
+          "servers",
+          "servers list",
+          "server list",
+          "slist",
         ],
-        (msg) => {
-          this.genericResponse.serverStats(msg);
-        }
+        (msg, args) => this.genericResponse.serverList(msg, args)
       )
       .addCmds(["supersay", "super say", "ss"], (msg, args) =>
         this.genericResponse.superSay(msg, args)

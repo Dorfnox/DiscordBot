@@ -1,7 +1,16 @@
 const WaffleResponse = require("./WaffleResponse");
+const {
+  getNumberFromArguments,
+  paginateArray,
+  zeroWidthSpaceChar,
+} = require("../util/WaffleUtil");
 const ArgumentHandler = require("./ArgumentHandler");
 const { link: inviteLink, botImgUrl } = require("../../configWaffleBot").invite;
-const { getSafe, randomFromArray } = require("../util/WaffleUtil");
+const {
+  getSafe,
+  randomFromArray,
+  randomMusicEmoji,
+} = require("../util/WaffleUtil");
 
 class GenericResponse {
   constructor(discordClient) {
@@ -139,6 +148,26 @@ class GenericResponse {
         title,
         fields,
       })
+      .reply(msg);
+  }
+
+  serverList(msg, args) {
+    const guildNames = this.discordClient.guilds.cache.array().map(g => g.name);
+    const pageSize = 50;
+    const pageCount = Math.ceil(guildNames.length / pageSize);
+    const pageArg = Math.min(
+      getNumberFromArguments(ArgumentHandler.removeArgs(args, 1)) || 1,
+      pageCount
+    );
+    const sp = ` ${zeroWidthSpaceChar} `;
+
+    const title = "Servers WaffleBot is in";
+    const description = paginateArray(guildNames, pageArg, pageSize).join("\n");
+    const footer = {
+      text: `📘 Page ${pageArg} of ${pageCount} ${sp} | ${sp} w servers pageNumber`,
+    };
+    new WaffleResponse()
+      .setEmbeddedResponse({ title, description, footer })
       .reply(msg);
   }
 }
