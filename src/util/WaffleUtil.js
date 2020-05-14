@@ -113,6 +113,12 @@ function retry(fn, retries = 3, timeoutMilliseconds = 0, err = null) {
   );
 }
 
+function timeoutPromise(timeoutInMilliseconds, dataToPass = null) {
+  return new Promise(resolve => {
+    setTimeout(() => resolve(dataToPass), timeoutInMilliseconds)
+  });
+}
+
 zeroWidthSpaceChar = "\u200b";
 
 waffleColorSpectrum = [
@@ -143,6 +149,7 @@ module.exports = {
   randomMusicEmoji,
   randomWaffleColor,
   retry,
+  timeoutPromise,
   waffleColorSpectrum,
   zeroWidthSpaceChar,
 };

@@ -1,9 +1,8 @@
 const ytdl = require("ytdl-core");
 const yts = require("yt-search");
-
-const { QueueItem, QueueContract } = require("./MusicQueue");
 const WaffleResponse = require("../message/WaffleResponse");
 const ArgumentHandler = require("../message/ArgumentHandler");
+const { QueueItem, QueueContract } = require("./MusicQueue");
 const {
   getSafe,
   isStaff,
@@ -233,31 +232,56 @@ class WaffleMusic {
     const ytLink = `https://www.youtube.com/watch?v=${videoId}`;
 
     const readableStream = ytdl.downloadFromInfo(info, {
+      filter: "audioonly",
       quality: "highestaudio",
       highWaterMark: 1 << highWaterMarkBitShift,
     }); /* ~4mbs */
 
+    readableStream.on("error", err => {
+      console.log("READABLE_STREAM_ERR: ", err);
+    });
+    readableStream.on("debug", (d) => {
+      console.log("READABLE_STREAM_DEBUG: ", d);
+    });
+    readableStream.on("end", (e) => {
+      console.log("READABLE_STREAM_END: ", e);
+    });
+    readableStream.on("close", (c) => {
+      console.log("READABLE_STREAM_CLOSE: ", c);
+    });
+
     try {
       connection
-      .play(readableStream, { highWaterMark: 1 })
-      .on("start", () => {
-        this.discordClient.user.setPresence({
-          activity: { name: `${videoTitle} 🎧`, type: "PLAYING", url: ytLink },
+        .play(readableStream, { highWaterMark: 1 })
+        .on("start", () => {
+          this.discordClient.user.setPresence({
+            activity: {
+              name: `${videoTitle} 🎧`,
+              type: "PLAYING",
+              url: ytLink,
+            },
+          });
+          const embeddedMessage = this._buildEmbeddedQueueMessage(
+            guildId,
+            false
+          );
+          textChannel
+            .send({ embed: embeddedMessage })
+            .catch((err) => console.log(err));
+        })
+        .on("finish", () => {
+          this._playFinish(guildId);
+        })
+        .on("error", (err) => {
+          console.log("DISPATCHER_ERROR: ", err);
+          this._playFinish(guildId);
+        })
+        .on("close", (c) => {
+          console.log("DISPATCHER_CLOSE: ", c);
+          this._playFinish(c);
         });
-        const embeddedMessage = this._buildEmbeddedQueueMessage(guildId, false);
-        textChannel
-          .send({ embed: embeddedMessage })
-          .catch((err) => console.log(err));
-      })
-      .on("finish", () => {
-        this._playFinish(guildId);
-      })
-      .on("error", (err) => {
-        console.log("DISPATCHER_ERROR: ", err);
-        this._playFinish(guildId);
-      })
     } catch (err) {
-      console.log('CONNECTION_PLAY_ERROR: ', err);
+      console.log("CONNECTION_PLAY_ERROR: ", err);
     }
   }
 
@@ -377,7 +401,9 @@ class WaffleMusic {
     const { id: guildId } = guild;
     const qc = this._getQueueContract(guildId);
     if (!qc || qc.musicQueue.isEmpty()) {
-      return Promise.resolve(":person_shrugging: There are no songs currently playing.");
+      return Promise.resolve(
+        ":person_shrugging: There are no songs currently playing."
+      );
     }
     return Promise.resolve(this._buildEmbeddedQueueMessage(guildId, false));
   }
@@ -390,11 +416,11 @@ class WaffleMusic {
     if (qc && qc.musicQueue.length()) {
       const queue = qc.musicQueue.getQueue();
       let queuePosition = -1;
-      for (let i = queue.length - 1 ; i >= 0 ; i-- ) {
-          if (queue[i].guildMemberId === guildMemberId) {
-              queuePosition = i;
-              break;
-          }
+      for (let i = queue.length - 1; i >= 0; i--) {
+        if (queue[i].guildMemberId === guildMemberId) {
+          queuePosition = i;
+          break;
+        }
       }
       if (queuePosition !== -1) {
         return this._skip(guildId, queuePosition);
@@ -404,11 +430,11 @@ class WaffleMusic {
   }
 
   static pause(msg) {
-    return Promise.resolve('Feature is coming soon :tm:');
+    return Promise.resolve("Feature is coming soon :tm:");
   }
 
   static unpause(msg) {
-    return Promise.resolve('Feature is coming soon :tm:');
+    return Promise.resolve("Feature is coming soon :tm:");
   }
 
   /* ~~~~~~~~~~~~~~~~~~ QUEUE CONTRACT HANDLERS ~~~~~~~~~~~~~~~~~~~ */
@@ -458,7 +484,7 @@ class WaffleMusic {
     if (!ytdl.validateURL(ytLink)) {
       throw `⚠️ Invalid url **${ytLink}** - Imma need some valid blueberries, bruh!`;
     }
-    return ytdl.getInfo(ytLink).catch(err => {
+    return ytdl.getInfo(ytLink).catch((err) => {
       throw err;
     });
   }
