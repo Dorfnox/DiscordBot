@@ -35,7 +35,7 @@
         "maxSongsPerUser": 6
     },
     "owner": {
-        "OwnerIds": [
+        "ownerIds": [
             "This is an array of discord user ids of people who can use the 'owner' commands on the bot. For example, \"155142100496105473\" "
         ]
     }

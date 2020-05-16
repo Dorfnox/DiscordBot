@@ -8,12 +8,11 @@ class OwnerCommands {
   }
 
   setStatus(msg, args = []) {
-    const { id } = msg.author;
     // Only allow a user who is the owner to
     if (this._isOwner(msg)) {
-      const name = args.join(' ');
-      this.client.user.setPresence({ activity: { name, type: 'PLAYING' }});
-      new WaffleResponse().setResponse(`(>^_^)> *New Actvity Status* <(^_^<)\n**${name}**`).reply(msg);
+      const status = args.join(' ');
+      this.client.user.setPresence({ activity: { name: status, type: 'PLAYING' }});
+      new WaffleResponse().setResponse(`(>^_^)> **New Actvity Status** <(^_^<)\n\`${status}\``).reply(msg);
     }
   }
 

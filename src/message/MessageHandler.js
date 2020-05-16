@@ -8,6 +8,7 @@ const Pokemon = require("../pokemon/Pokemon");
 const WaffleMail = require("../mail/WaffleMail");
 const OwnerCommands = require("../owner/OwnerCommands");
 const GuildSettingsManager = require("../data-managers/GuildSettingsManager");
+const TwitchChannelManager = require("../data-managers/TwitchChannelManager");
 const WaffleResponse = require("./WaffleResponse");
 const ArgumentHandler = require("./ArgumentHandler");
 const {
@@ -73,6 +74,9 @@ class MessageHandler {
       )
       .addCmds(["supersay", "super say", "ss"], (msg, args) =>
         this.genericResponse.superSay(msg, args)
+      )
+      .addCmds(["twitch enable", "enable twitch"], (msg, args) =>
+        TwitchChannelManager.messageConsumer(msg, args)
       );
     this.helpCategory = {
       admin: {

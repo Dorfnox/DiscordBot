@@ -1,3 +1,5 @@
+const { ownerIds } = require("../../configWaffleBot").owner;
+
 // For use with Maps in the form: Map<k>:Set<v>
 function addValueToMapSet(map, key, setValue) {
   if (!map.has(key)) {
@@ -73,8 +75,13 @@ function isStaff(guildMember) {
   return (
     !guildMember.user.bot &&
     (guildMember.hasPermission("KICK_MEMBERS") ||
-      guildMember.hasPermission("ADMINISTRATOR"))
+      guildMember.hasPermission("ADMINISTRATOR") ||
+      ownerIds.indexOf(guildMember.user.id) !== -1)
   );
+}
+
+function jsonCopy(json) {
+  return JSON.parse(JSON.stringify(json));
 }
 
 function paginateArray(myArray, page, pageSize) {
@@ -144,6 +151,7 @@ module.exports = {
   getNumberFromArguments,
   getSafe,
   isStaff,
+  jsonCopy,
   paginateArray,
   randomFromArray,
   randomMusicEmoji,

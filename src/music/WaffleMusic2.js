@@ -39,27 +39,28 @@ class WaffleMusic {
       return;
     }
     const pRes = this.musicArgMap.parseArguments(args);
-    if (pRes.exists) {
-      const musicArgs = ArgumentHandler.removeArgs(args, pRes.parseLength);
-      pRes
-        .value(msg, musicArgs)
-        .then((res) => {
-          if (res) {
-            new WaffleResponse()
-              .setEmbeddedResponse(
-                typeof res === "string" ? { description: res } : res
-              )
-              .reply(msg);
-          }
-        })
-        .catch((err) => {
-          if (err) {
-            new WaffleResponse()
-              .setEmbeddedResponse({ description: err })
-              .reply(msg);
-          }
-        });
+    if (!pRes.exists) {
+      return;
     }
+    const musicArgs = ArgumentHandler.removeArgs(args, pRes.parseLength);
+    pRes
+      .value(msg, musicArgs)
+      .then((res) => {
+        if (res) {
+          new WaffleResponse()
+            .setEmbeddedResponse(
+              typeof res === "string" ? { description: res } : res
+            )
+            .reply(msg);
+        }
+      })
+      .catch((err) => {
+        if (err) {
+          new WaffleResponse()
+            .setEmbeddedResponse({ description: err })
+            .reply(msg);
+        }
+      });
   }
 
   static join(msg, args) {
@@ -237,7 +238,7 @@ class WaffleMusic {
       highWaterMark: 1 << highWaterMarkBitShift,
     }); /* ~4mbs */
 
-    readableStream.on("error", err => {
+    readableStream.on("error", (err) => {
       console.log("READABLE_STREAM_ERR: ", err);
     });
     readableStream.on("debug", (d) => {

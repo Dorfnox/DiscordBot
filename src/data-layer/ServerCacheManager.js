@@ -1,9 +1,10 @@
 const WaffleMongo = require("./WaffleMongo");
+const { jsonCopy } = require("../util/WaffleUtil");
 
 class ServerCacheManager {
-  constructor(collectionName, defaultDocumentData) {
+  constructor(collectionName, defaultDocumentData = {}) {
     this.collectionName = collectionName;
-    this.defaultDocumentData = defaultDocumentData || {};
+    this.defaultDocumentData = defaultDocumentData;
     // Map of id -> documentData
     this.documentCache = new Map();
     this.mongoData = new WaffleMongo(collectionName);
@@ -16,7 +17,7 @@ class ServerCacheManager {
   }
 
   /* GETTERS */
-  get(_id) {
+  get(_id, defaultDocumentData = null) {
     return this.getFromCache(_id).then((documentData) => {
       if (documentData) {
         return documentData;
@@ -25,7 +26,10 @@ class ServerCacheManager {
         if (newDocumentData) {
           return this.setToCache(_id, newDocumentData);
         }
-        return this.set(_id, this.defaultDocumentData);
+        return this.set(
+          _id,
+          jsonCopy(defaultDocumentData || this.defaultDocumentData)
+        );
       });
     });
   }
@@ -39,9 +43,9 @@ class ServerCacheManager {
   }
 
   /* SETTERS */
-  set(_id, documentData) {
+  set(_id, documentData, cacheData = null) {
     return this.setToCollection(_id, documentData).then(() =>
-      this.setToCache(_id, documentData)
+      this.setToCache(_id, cacheData || documentData)
     );
   }
 
@@ -51,14 +55,14 @@ class ServerCacheManager {
   }
 
   setToCollection(_id, documentData) {
-    documentData = { _id, ...documentData };
     return this.mongoData
       .updateOneOrInsert({ _id }, { $set: documentData })
-      .then(() => documentData);
+      .then(() => {
+        return { _id, ...documentData };
+      });
   }
 
   /* DELETERS */
-
   delete(_id) {
     return this.deleteFromCollection(_id).then((res) => {
       return this.deleteFromCache(_id);
