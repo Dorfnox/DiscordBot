@@ -4,6 +4,7 @@ const GatsScraper = require("../gats/GatsScraper");
 const GenericResponse = require("../message/GenericResponse");
 const WaffleMusic = require("../music/WaffleMusic");
 const WaffleMusic2 = require("../music/WaffleMusic2");
+const YoutubeDownloader = require("../music/YoutubeDownloader");
 const Pokemon = require("../pokemon/Pokemon");
 const WaffleMail = require("../mail/WaffleMail");
 const OwnerCommands = require("../owner/OwnerCommands");
@@ -53,6 +54,9 @@ class MessageHandler {
           "removelast",
         ],
         (msg, args) => WaffleMusic2.executeMusicCmd(msg, args)
+      )
+      .addCmds(["download", "dld", "dl"], (msg, args) =>
+        YoutubeDownloader.consumeMessage(msg, args)
       )
       .addCmds(["drip", "drips", "dripz"], (msg) =>
         this.genericResponse.drip(msg)

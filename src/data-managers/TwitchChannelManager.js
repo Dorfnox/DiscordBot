@@ -70,16 +70,14 @@ class TwitchChannelManager {
           .then((twitchChannelData) => {
             return TwitchHelix.subscribeToTwitchUserNotification(
               twitchChannelData._id
-            ).then((res) => {
-              new WaffleResponse().setEmbeddedResponse({ description: })
-              return `✅ You have enabled twitch notifiications for ${}`;
+            ).then(() => {
+              const description = `✅ You have enabled twitch notifiications for ${twitchChannelData.displayName}`;
+              new WaffleResponse().setEmbeddedResponse({ description }).reply(msg);
             });
           });
       }
     );
     // 1. Check cache if we have twitch enabled for that
-
-    return Promise.resolve();
   }
 
   static _toggleTwitchNotifications(msg, channelArg) {}

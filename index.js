@@ -4,6 +4,7 @@ const WaffleMongo = require("./src/data-layer/WaffleMongo");
 const GuildSettingsManager = require("./src/data-managers/GuildSettingsManager");
 const TwitchChannelManager = require("./src/data-managers/TwitchChannelManager");
 const WaffleMusic = require("./src/music/WaffleMusic2");
+const YoutubeDownloader = require("./src/music/YoutubeDownloader");
 const { token } = require("./configWaffleBot.json").init;
 const Express = require("express");
 
@@ -18,6 +19,7 @@ discordClient
       GuildSettingsManager.init(discordClient);
       WaffleMusic.init(discordClient);
       TwitchChannelManager.init(discordClient);
+      YoutubeDownloader.init(discordClient);
     });
     discordClient.user.setPresence({ activity: { name: "", type: "" } });
   })
