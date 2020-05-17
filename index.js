@@ -30,7 +30,9 @@ discordClient.login(token);
 /* EXPRESS Initialization | Handle incomming webhooks */
 const app = Express();
 app.post("/twitch/notify_on_live", (req, res) => {
-  res.status(200).end();
+  console.log('Request Received:', req);
+  res.status(200).send();
+  console.log('Request will be handled');
   TwitchChannelManager.notifyOnLiveWebhookConsumer(req);
 });
 app.listen(6969);
