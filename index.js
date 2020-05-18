@@ -5,10 +5,11 @@ const GuildSettingsManager = require("./src/data-managers/GuildSettingsManager")
 const TwitchChannelManager = require("./src/data-managers/TwitchChannelManager");
 const WaffleMusic = require("./src/music/WaffleMusic2");
 const YoutubeDownloader = require("./src/music/YoutubeDownloader");
-const { token } = require("./configWaffleBot.json").init;
+const { init, publicIP } = require("./configWaffleBot.json");
 const Express = require("express");
 
 /* DISCORD Initialization */
+const { token: discordToken } = init;
 const discordClient = new Discord.Client();
 const messageHandler = new MessageHandler(discordClient);
 discordClient
@@ -25,14 +26,14 @@ discordClient
   })
   .on("message", (msg) => messageHandler.handleMessage(msg))
   .on("error", (err) => console.log("DISCORDJS Error: ", err.message));
-discordClient.login(token);
+discordClient.login(discordToken);
 
 /* EXPRESS Initialization | Handle incomming webhooks */
+const { port } = publicIP;
 const app = Express();
-app.post("/twitch/notify_on_live", (req, res) => {
-  console.log('Request Received:', req);
+app.post("/twitch/notify_on_live/:twitch_user_id", (req, res) => {
   res.status(200).send();
-  console.log('Request will be handled');
-  TwitchChannelManager.notifyOnLiveWebhookConsumer(req);
+  const { twitch_user_id } = req.params;
+  TwitchChannelManager.notifyOnLiveWebhookConsumer(twitch_user_id);
 });
-app.listen(6969);
+app.listen(port);

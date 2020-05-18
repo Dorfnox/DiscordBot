@@ -84,6 +84,14 @@ function jsonCopy(json) {
   return JSON.parse(JSON.stringify(json));
 }
 
+function logger(guildName, channelName, username, content, err = null) {
+  const readableDate = new Date().toUTCString();
+  setTimeout(() => {
+    const logMessage = `\n[${readableDate} | ${guildName}, ${channelName}, ${username}]\n_REQ: ${content}${err ? `\n_ERR: ${err}` : ""}`;
+    console.log(logMessage);
+  }, 100);
+}
+
 function paginateArray(myArray, page, pageSize) {
   return myArray.slice(pageSize * (page - 1), pageSize * page);
 }
@@ -120,9 +128,25 @@ function retry(fn, retries = 3, timeoutMilliseconds = 0, err = null) {
   );
 }
 
+function sendChannel(
+  channel,
+  embed,
+  { guildName = "...", username = "...", content = "", err = null}
+) {
+  return channel
+    .send({ embed })
+    .then((sentMsg) => {
+      logger(guildName, channel.name, username, content, err);
+      return sentMsg;
+    })
+    .catch((err) => {
+      logger(guildName, channel.name, username, content, err);
+    });
+}
+
 function timeoutPromise(timeoutInMilliseconds, dataToPass = null) {
-  return new Promise(resolve => {
-    setTimeout(() => resolve(dataToPass), timeoutInMilliseconds)
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(dataToPass), timeoutInMilliseconds);
   });
 }
 
@@ -152,11 +176,13 @@ module.exports = {
   getSafe,
   isStaff,
   jsonCopy,
+  logger,
   paginateArray,
   randomFromArray,
   randomMusicEmoji,
   randomWaffleColor,
   retry,
+  sendChannel,
   timeoutPromise,
   waffleColorSpectrum,
   zeroWidthSpaceChar,

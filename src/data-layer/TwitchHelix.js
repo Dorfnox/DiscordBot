@@ -58,12 +58,18 @@ class TwitchHelix {
     return (
       this._axiosRequest("get", url)
         // response.data.data will be an empty array if provided user doesn't exist
-        .then((response) => response.data.data[0])
+        .then((response) => {
+          const userData = response.data.data[0];
+          if (!userData) {
+            throw "No user data found";
+          }
+          return userData;
+        })
         .catch(() => {
           throw (
-            `⚠️ An error occurred while getting twitch user from channel name / url.\n` +
+            `⚠️ An error occurred while retrieving twitch user data for **${channelName}**.\n\n` +
             `Try supplying the twitch streamer's **home url** or their **channel username**.\n` +
-            `*If you continue experiencing this issue, this may be a problem with the bot.*`
+            `If you continue experiencing this issue, this may be a problem with the bot.`
           );
         })
     );
@@ -72,7 +78,7 @@ class TwitchHelix {
   static subscribeToTwitchUserNotification(twitchUserId) {
     const url = `${this.helixEndpoint}webhooks/hub`;
     const topic = `${this.helixEndpoint}streams?user_id=${twitchUserId}`;
-    const callback = `https://${publicIPAddress}:${port}/twitch/notify_on_live/`;
+    const callback = `http://${publicIPAddress}:${port}/twitch/notify_on_live/${twitchUserId}`;
     const data = {
       "hub.mode": "subscribe",
       "hub.callback": callback,
@@ -82,11 +88,14 @@ class TwitchHelix {
     return this._axiosRequest("post", url, { data })
       .then((response) => {
         if (response.status !== 202) {
-          return `⚠️ Hit an error subscribing to that twitch user! ${response.status}, ${response.statusText}`;
+          console.log(
+            `⚠️ Error subscribing to twitch user ${twitchUserId}! ${response.status}, ${response.statusText}`
+          );
+          throw "Bad response status";
         }
       })
       .catch(() => {
-        throw "Failed to subscribe to twitch user notifications";
+        throw "⚠️ Failed to subscribe to twitch user notifications";
       });
   }
 
@@ -105,8 +114,8 @@ class TwitchHelix {
         if (false) {
           return this.refreshToken().then(() => axiosRequest());
         }
-        console.log("_axiosRequest | Error:", err);
-        throw err;
+        console.log("_axiosRequest | Error:", method, url, options, err);
+        throw `_axiosRequest failed to perform for: ${method}, ${url}, ${options}`;
       });
   }
 }

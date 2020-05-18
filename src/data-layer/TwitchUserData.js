@@ -17,7 +17,7 @@ class TwitchUserData extends ServerCacheManager {
   };
   static defaultGuildSettings = {
     channelId: "",
-    userIds: [],
+    memberIds: [],
   };
 
   constructor() {
@@ -41,6 +41,10 @@ class TwitchUserData extends ServerCacheManager {
         { [`notifyOnLive.guilds.${guildId}`]: guildSettings },
         twitchData
       );
+    })
+    .catch(err => {
+      console.log('addNotifyOnLiveChannel | Err:', err);
+      throw '⚠️ An issue occurred while enabling this channel. Please try again';
     });
   }
 
@@ -64,21 +68,6 @@ class TwitchUserData extends ServerCacheManager {
       viewCount,
     });
   }
-
-  // deleteBotBomberChannel(guildId, channelId) {
-  //   return this.get(guildId).then((guildSettingsData) => {
-  //     const removeBotFromChannelSet = guildSettingsData.removeBotFromChannelSet.filter(
-  //       (chId) => chId != channelId
-  //     );
-  //     return this.set(guildId, { removeBotFromChannelSet });
-  //   });
-  // }
-
-  // isBotBomberInChannel(guildId, channelId) {
-  //   return this.get(guildId).then((gsd) => {
-  //     return gsd.removeBotFromChannelSet.indexOf(channelId) !== -1;
-  //   });
-  // }
 }
 
 module.exports = TwitchUserData;
