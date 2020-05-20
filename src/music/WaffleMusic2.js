@@ -17,24 +17,22 @@ class WaffleMusic {
   static discordClient = null;
   static serverQueue = new Map(); // Map of guildId -> QueueContract
   static musicArgMap = new ArgumentHandler()
-    .addCmds(["join", "j"], (msg, args) => this.join(msg, args))
-    .addCmds(["leave", "l"], (msg) => this.leave(msg))
-    .addCmds(["play", "p"], (msg, args) => this.play(msg, args))
-    .addCmds(["queue", "q"], (msg) => this.queue(msg))
-    .addCmds(["skip", "stop", "end", "finish"], (msg, args) =>
-      this.skip(msg, args)
-    )
-    .addCmds(["repeat", "r"], (msg) => this.repeat(msg))
-    .addCmds(["song"], (msg) => this.song(msg))
-    .addCmds(["oops", "removelast"], (msg) => this.oops(msg))
-    .addCmds(["pause"], (msg) => this.pause(msg))
-    .addCmds(["unpause", "up"], (msg) => this.unpause(msg));
+    .addCmdsForCategory("Music", "Join", (msg, args) => this.join(msg, args))
+    .addCmdsForCategory("Music", "Leave", (msg) => this.leave(msg))
+    .addCmdsForCategory("Music", "Play", (msg, args) => this.play(msg, args))
+    .addCmdsForCategory("Music", "Queue", (msg) => this.queue(msg))
+    .addCmdsForCategory("Music", "Skip", (msg, args) => this.skip(msg, args))
+    .addCmdsForCategory("Music", "Repeat", (msg) => this.repeat(msg))
+    .addCmdsForCategory("Music", "Song", (msg) => this.song(msg))
+    .addCmdsForCategory("Music", "Oops", (msg) => this.oops(msg))
+    .addCmdsForCategory("Music", "Pause", (msg) => this.pause(msg))
+    .addCmdsForCategory("Music", "Unpause", (msg) => this.unpause(msg));
 
   static init(discordClient) {
     this.discordClient = discordClient;
   }
 
-  static executeMusicCmd(msg, args) {
+  static messageConsumer(msg, args) {
     if (!this.discordClient) {
       return;
     }
