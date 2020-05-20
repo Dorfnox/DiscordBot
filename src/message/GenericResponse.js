@@ -41,11 +41,11 @@ class GenericResponse {
   }
 
   static messageConsumer(msg, args) {
+    // Initialize context
     const { guild, channel, content } = msg;
     const { name: guildName } = guild;
     const { name: channelName } = channel;
     const { username } = msg.author;
-    // Initialize context
     const ctx = { guildName, username, content, err: null };
 
     // Exit if not initialized

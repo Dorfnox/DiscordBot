@@ -24,27 +24,27 @@ class TwitchUserData extends ServerCacheManager {
     super("twitchChannel");
   }
 
-  addNotifyOnLiveChannel(twitchUserData, guildId, channelId) {
-    const { id: _id } = twitchUserData;
+  addNotifyOnLiveChannel(TwitchUserAPIData, guildId, channelId) {
+    const { id: _id } = TwitchUserAPIData;
     return this.get(
       _id,
-      TwitchUserData.getDefaultTwitchUserData(twitchUserData)
-    ).then((twitchData) => {
+      TwitchUserData.getDefaultTwitchUserData(TwitchUserAPIData)
+    ).then((TwitchUserDBData) => {
       const guildSettings =
-        twitchData.notifyOnLive.guilds[guildId] ||
+        TwitchUserDBData.notifyOnLive.guilds[guildId] ||
         jsonCopy(TwitchUserData.defaultGuildSettings);
       // Update Channel ID
       guildSettings.channelId = channelId;
-      twitchData.notifyOnLive.guilds[guildId] = guildSettings;
+      TwitchUserDBData.notifyOnLive.guilds[guildId] = guildSettings;
       return this.set(
         _id,
         { [`notifyOnLive.guilds.${guildId}`]: guildSettings },
-        twitchData
+        TwitchUserDBData
       );
     })
     .catch(err => {
       console.log('addNotifyOnLiveChannel | Err:', err);
-      throw '⚠️ An issue occurred while enabling this channel. Please try again';
+      throw `⚠️ An issue occurred while enabling this channel. Please try again`;
     });
   }
 

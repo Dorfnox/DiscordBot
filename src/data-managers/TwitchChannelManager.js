@@ -2,59 +2,68 @@ const TwitchUserData = require("../data-layer/TwitchUserData");
 const TwitchHelix = require("../data-layer/TwitchHelix");
 const WaffleResponse = require("../message/WaffleResponse");
 const ArgumentHandler = require("../message/ArgumentHandler");
-const { isStaff, sendChannel, zeroWidthSpaceChar: z } = require("../util/WaffleUtil");
+const {
+  isStaff,
+  sendChannel,
+  zeroWidthSpaceChar: z,
+} = require("../util/WaffleUtil");
 
 class TwitchChannelManager {
   static init(discordClient) {
     this.discordClient = discordClient;
     this.twitchUserData = new TwitchUserData();
     this.ready = true;
-    this.argMap = new ArgumentHandler().addCmds(
-      ["twitch enable", "enable twitch"],
-      (msg, channelArg) => this.enableTwitchNotifications(msg, channelArg)
-    );
+    this.argMap = new ArgumentHandler()
+      .addCmdsForCategory(
+        "3rdPartyIntegrations",
+        "Twitch Enable",
+        (msg, channelArg) => this.enableTwitchNotifications(msg, channelArg)
+      )
+      .addCmdsForCategory(
+        "3rdPartyIntegrations",
+        "Twitch Disable",
+        (msg, channelArg) => this.enableTwitchNotifications(msg, channelArg)
+      );
   }
 
   /* ~~~ ~~~ ~~~ ~~~ Consumes commands from Discord ~~~ ~~~ ~~~ ~~~ */
   static messageConsumer(msg, args) {
+    // Initialize context
+    const { guild, channel, author, content } = msg;
+    const { name: guildName } = guild;
+    const { username } = author;
+    const ctx = { guildName, username, content, err: null };
+
+    // Validate executability
     if (!this.ready) {
-      new WaffleResponse()
-        .setEmbeddedResponse({ description: `Feature is down at the moment` })
-        .reply(msg);
-      return;
+      ctx.err = `Feature is down at the moment`;
+      return sendChannel(channel, { description: ctx.err }, ctx);
     }
+
+    // Collect arguments
     const parseRes = this.argMap.parseArguments(args);
     if (!parseRes.exists) {
       return;
     }
-    const channelArg = ArgumentHandler.removeArgs(args, parseRes.parseLength);
-    const { guild, channel, author, content } = msg;
-    const { name: guildName } = guild;
-    const { username } = author;
+
+    // Execute argument function
     parseRes
-      .value(msg, channelArg)
+      .value(msg, ArgumentHandler.removeArgs(args, parseRes.parseLength))
+      .catch((description) => {
+        console.log(description);
+        ctx.err = description;
+        return description;
+      })
       .then((description) => {
         if (description) {
-          sendChannel(
-            channel,
-            { description },
-            { guildName, username, content }
-          );
-        }
-      })
-      .catch((description) => {
-        if (description) {
-          sendChannel(
-            channel,
-            { description },
-            { guildName, username, content, err: description }
-          );
+          sendChannel(channel, { description }, ctx);
         }
       });
   }
 
   static enableTwitchNotifications(msg, channelArg) {
-    if (!isStaff(msg.member)) {
+    const { guild, channel, member } = msg;
+    if (!isStaff(member)) {
       return Promise.reject(
         `🚫 You must be a staff member to enable/disable twitch notifications.`
       );
@@ -63,26 +72,29 @@ class TwitchChannelManager {
         `⚠️ Please provide the **twitch url** or **channel username** of the twitch streamer to enable/disable notifications for.`
       );
     }
-    const { guild, channel } = msg;
     return this._enableTwitchNotifications(guild, channel, channelArg);
   }
 
   static _enableTwitchNotifications(guild, channel, twitchUserArgstring) {
-    // 1. Get twitch user data via api
-    return TwitchHelix.getTwitchUserFromChannelNameOrURL(
-      twitchUserArgstring
-    ).then((channelData) =>
-      this.twitchUserData
-        .addNotifyOnLiveChannel(channelData, guild.id, channel.id)
-        .then((twitchChannelData) =>
-          TwitchHelix.subscribeToTwitchUserNotification(
-            twitchChannelData._id
-          ).then(
-            () =>
-              `✅ You have enabled twitch notifiications for ${twitchChannelData.displayName}`
-          )
+    // 1.  Call Twitch API to get user data
+    return TwitchHelix.getTwitchUserFromChannelNameOrURL(twitchUserArgstring)
+      .then((TwitchUserAPIData) =>
+        // 2. Add guild/channel to database for notifications
+        this.twitchUserData.addNotifyOnLiveChannel(
+          TwitchUserAPIData,
+          guild.id,
+          channel.id
         )
-    );
+      )
+      .then((TwitchUserDBData) =>
+        // 3. Call Twitch API to initialze webhook
+        TwitchHelix.subscribeToTwitchUserNotification(
+          TwitchUserDBData._id
+        ).then(
+          () =>
+            `✅ You have enabled twitch notifiications for ${TwitchUserDBData.displayName}`
+        )
+      );
     // 1. Check cache if we have twitch enabled for that
   }
 
@@ -116,7 +128,12 @@ class TwitchChannelManager {
             return guildsToClean.add(guildId);
           }
           // Notify Channel / Users
-          const { displayName, loginName, profileImageURL, description } = twitchUser;
+          const {
+            displayName,
+            loginName,
+            profileImageURL,
+            description,
+          } = twitchUser;
           const mentions = memberIds
             .filter((mid) => {
               // If member is no longer in channel, clean them up

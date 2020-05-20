@@ -58,9 +58,6 @@ class MessageHandler {
       .addCmds(["download", "dld", "dl"], (msg, args) =>
         YoutubeDownloader.messageConsumer(msg, args)
       )
-      .addCmds(["twitch enable", "enable twitch"], (msg, args) =>
-        TwitchChannelManager.messageConsumer(msg, args)
-      )
       .addCmdsForCategory("Admin", null, (msg, args) =>
         GuildSettingsManager.messageConsumer(msg, args)
       )
@@ -69,6 +66,9 @@ class MessageHandler {
       )
       .addCmdsForCategory("Owner", null, (msg, args) =>
         OwnerCommands.setStatus(msg, args)
+      )
+      .addCmdsForCategory("3rdPartyIntegrations", null, (msg, args) =>
+        TwitchChannelManager.messageConsumer(msg, args)
       );
     this.helpCategory = {
       gats: {

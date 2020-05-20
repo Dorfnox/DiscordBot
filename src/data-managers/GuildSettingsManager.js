@@ -17,12 +17,12 @@ class GuildSettingsManager {
   }
 
   static messageConsumer(msg, args) {
+    // Set context
     const { channel, guild, content, member } = msg;
     const { name: guildName } = guild;
     const { username } = msg.author;
-
-    // Set context
     const ctx = { guildName, username, content, err: null };
+    
     // Validate executability
     if (!this.ready) {
       ctx.err = `Feature is down at the moment`;
