@@ -143,7 +143,7 @@ class TwitchChannelManager {
               url: profileImageURL,
             },
             url: `https://www.twitch.tv/${loginName}`,
-            title: `Click here to join ${displayName}'s **livestream**!`,
+            title: `${displayName} is now **livestreaming**! Click here to join the stream.`,
             description: `${description}\n${mentions}\n${z}`,
             fields: [
               {

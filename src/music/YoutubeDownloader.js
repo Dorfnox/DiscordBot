@@ -23,7 +23,7 @@ class YoutubeDownloader {
     this.discordClient = discordClient;
   }
 
-  static consumeMessage(msg, args) {
+  static messageConsumer(msg, args) {
     if (!this.discordClient) {
       return new WaffleResponse()
         .setEmbeddedResponse({

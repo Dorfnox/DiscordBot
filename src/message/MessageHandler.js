@@ -1,5 +1,4 @@
 const Discord = require("discord.js");
-
 const GatsScraper = require("../gats/GatsScraper");
 const GenericResponse = require("../message/GenericResponse");
 const WaffleMusic = require("../music/WaffleMusic");
@@ -14,6 +13,8 @@ const WaffleResponse = require("./WaffleResponse");
 const ArgumentHandler = require("./ArgumentHandler");
 const {
   arrayFromObjectValues,
+  getSafe,
+  logger,
   randomFromArray,
 } = require("../util/WaffleUtil");
 const config = require("../../configWaffleBot.json");
@@ -28,7 +29,6 @@ class MessageHandler {
     this.gatsScraper = new GatsScraper();
     this.pokemon = new Pokemon();
     this.waffleMail = new WaffleMail(client);
-    this.ownerCommands = new OwnerCommands(client);
     this.cmdHandler = new ArgumentHandler()
       .addCmds(
         [
@@ -56,44 +56,24 @@ class MessageHandler {
         (msg, args) => WaffleMusic2.executeMusicCmd(msg, args)
       )
       .addCmds(["download", "dld", "dl"], (msg, args) =>
-        YoutubeDownloader.consumeMessage(msg, args)
-      )
-      .addCmds(["drip", "drips", "dripz"], (msg) =>
-        this.genericResponse.drip(msg)
-      )
-      .addCmds(["serverstats", "wafflesstats"], (msg) => {
-        this.genericResponse.serverStats(msg);
-      })
-      .addCmds(
-        [
-          "serverlist",
-          "serverslist",
-          "sl",
-          "servers",
-          "servers list",
-          "server list",
-          "slist",
-        ],
-        (msg, args) => this.genericResponse.serverList(msg, args)
-      )
-      .addCmds(["supersay", "super say", "ss"], (msg, args) =>
-        this.genericResponse.superSay(msg, args)
+        YoutubeDownloader.messageConsumer(msg, args)
       )
       .addCmds(["twitch enable", "enable twitch"], (msg, args) =>
         TwitchChannelManager.messageConsumer(msg, args)
+      )
+      .addCmdsForCategory("Admin", null, (msg, args) =>
+        GuildSettingsManager.messageConsumer(msg, args)
+      )
+      .addCmdsForCategory("General", null, (msg, args) =>
+        GenericResponse.messageConsumer(msg, args)
+      )
+      .addCmdsForCategory("Owner", null, (msg, args) =>
+        OwnerCommands.setStatus(msg, args)
       );
     this.helpCategory = {
-      admin: {
-        name: "Admin",
-        description: "Commands for admin use only.",
-      },
       gats: {
         name: "Gats",
         description: "Queries for gats information.",
-      },
-      general: {
-        name: "General",
-        description: "General commands.",
       },
       music: {
         name: "Music",
@@ -117,44 +97,12 @@ class MessageHandler {
         aliases: ["cs"],
         helpCategory: this.helpCategory.gats,
       },
-      feed: {
-        name: "Feed",
-        execute: (msg) => this.genericResponse.feed(msg),
-        description: "Give wfl waffles!",
-        helpCategory: this.helpCategory.general,
-      },
-      help: {
-        name: "Help",
-        execute: this.executeHelp,
-        description: "Command waffle with waffle|wfl|w|:waffle: + *command*.",
-        aliases: ["h"],
-        helpCategory: this.helpCategory.general,
-      },
-      how: {
-        name: "How",
-        execute: (msg, args) => this.genericResponse.how(msg, args),
-        description: "Try 'how old is kendron' to find out Kendron's age!",
-        helpCategory: this.helpCategory.general,
-      },
-      invite: {
-        name: "Invite",
-        execute: (msg) => this.genericResponse.invite(msg),
-        description: "Invite Link to add WaffleBot to your server!",
-        aliases: ["inv"],
-        helpCategory: this.helpCategory.general,
-      },
       join: {
         name: "Join",
         execute: (msg, args) => this.waffleMusic.join(msg, args),
         description: "Provide the name of a VOICE CHANNEL to join.",
         aliases: ["j"],
         helpCategory: this.helpCategory.music,
-      },
-      nani: {
-        name: "Nani",
-        execute: (msg) => this.genericResponse.nani(msg),
-        description: "UwU notice me senpai.",
-        helpCategory: this.helpCategory.general,
       },
       pause: {
         name: "Pause",
@@ -176,12 +124,6 @@ class MessageHandler {
           "Displays the stats of a player (eg: w playerstats dorfnox).",
         aliases: ["ps"],
         helpCategory: this.helpCategory.gats,
-      },
-      ping: {
-        name: "Ping",
-        execute: (msg) => this.genericResponse.ping(msg),
-        description: "Shows the ping in ms between client -> server.",
-        helpCategory: this.helpCategory.general,
       },
       "p!hint": {
         name: "p!hint",
@@ -209,32 +151,6 @@ class MessageHandler {
         description: "Queues up the currently playing song to be played again.",
         aliases: ["r"],
         helpCategory: this.helpCategory.music,
-      },
-      salt: {
-        name: "Salt",
-        execute: (msg) => this.genericResponse.salt(msg),
-        description: "Just why?",
-        helpCategory: this.helpCategory.general,
-      },
-      say: {
-        name: "Say",
-        execute: (msg, args) => this.genericResponse.say(msg, args),
-        description: "I will repeat what you say :D",
-        helpCategory: this.helpCategory.general,
-      },
-      screwbots: {
-        name: "ScrewBots",
-        execute: (msg) => GuildSettingsManager.screwbots(msg),
-        description: "Removes all bot messages from invoked channel.",
-        aliases: ["nobots", "sb"],
-        helpCategory: this.helpCategory.admin,
-      },
-      setstatus: {
-        name: "SetStatus",
-        execute: (msg, args) => this.ownerCommands.setStatus(msg, args),
-        description: "Sets the status of the bot, globally",
-        aliases: ["ss"],
-        helpCategory: this.helpCategory.owner,
       },
       skip: {
         name: "Skip",
@@ -270,14 +186,6 @@ class MessageHandler {
         description: "Unpause the current song.",
         helpCategory: this.helpCategory.music,
       },
-      unscrewbots: {
-        name: "UnScrewBots",
-        execute: (msg) => GuildSettingsManager.unscrewbots(msg),
-        description:
-          "Allows bots to again post messages in a channel if they have been previously screwed.",
-        aliases: ["yesbots", "usb"],
-        helpCategory: this.helpCategory.admin,
-      },
     };
     // Map of Alias -> Command (eg: p -> play )
     this.aliasMap = new Map();
@@ -291,7 +199,7 @@ class MessageHandler {
   }
 
   handleMessage(msg) {
-    const { content, guild, author } = msg;
+    const { content, guild, channel, author } = msg;
     const { bot: isBot } = author;
     const wr = new WaffleResponse();
 
@@ -300,12 +208,12 @@ class MessageHandler {
     }
 
     // Handle Direct Mod-Mail Messages
-    if (!isBot && !guild && msg.channel instanceof Discord.DMChannel) {
+    if (!isBot && !guild && channel instanceof Discord.DMChannel) {
       return this.waffleMail.handleDM(msg);
     } else if (
       !isBot &&
-      msg.channel.parent &&
-      msg.channel.parent.name === modMailChannelCategoryName
+      channel.parent &&
+      channel.parent.name === modMailChannelCategoryName
     ) {
       return this.waffleMail.handleModChannel(msg);
     }
@@ -320,18 +228,28 @@ class MessageHandler {
       return;
     }
 
+    // Quick hardcoded-prefix check here to avoid performant-heavy parsing later
+    const prefixCheck = content.substr(0, 10).toLowerCase();
+    if (!prefixes.some((prefix) => prefixCheck.startsWith(`${prefix} `)))
+      return;
+
+    // Execute Command, if exists
     const pRes = this.cmdHandler.parseArguments(content, true);
     if (pRes.exists) {
       try {
-        return pRes.value(msg, ArgumentHandler.removeArgs(content, 1));
+        pRes.value(msg, ArgumentHandler.removeArgs(content, 1));
       } catch (err) {
-        console.log(new Date().toUTCString(), "Unhandled Exception: ", err);
+        getSafe(() => logger(guild.name, channel.name, author.username, err));
+        console.log(err);
       }
       return;
     }
 
     // Parse out arguments
-    const args = content.trim().split(/\s+/);
+    const args = content
+      .trim()
+      .split(/\s+/)
+      .filter((i) => i);
 
     // Escape if not equal to the prefix
     if (!prefixes.some((prefix) => args[0].toLowerCase() === prefix)) return;

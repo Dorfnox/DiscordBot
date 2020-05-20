@@ -80,7 +80,7 @@ class WaffleMongo {
     if (collection) {
       return collection.findOne(findArgs, fieldsToReturn).catch((err) => {
         console.log("Error performing find: ", err);
-        throw err;
+        throw '⚠️ Unable to find record';
       });
     }
     return Promise.reject("No collection");

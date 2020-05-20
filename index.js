@@ -5,6 +5,8 @@ const GuildSettingsManager = require("./src/data-managers/GuildSettingsManager")
 const TwitchChannelManager = require("./src/data-managers/TwitchChannelManager");
 const WaffleMusic = require("./src/music/WaffleMusic2");
 const YoutubeDownloader = require("./src/music/YoutubeDownloader");
+const GenericResponse = require("./src/message/GenericResponse");
+const OwnerCommands = require("./src/owner/OwnerCommands");
 const { init, publicIP } = require("./configWaffleBot.json");
 const Express = require("express");
 
@@ -18,10 +20,12 @@ discordClient
     WaffleMongo.connect().then((mongoClient) => {
       console.log(`✅ Mongo DB connected: ${mongoClient.s.options.srvHost}`);
       GuildSettingsManager.init(discordClient);
-      WaffleMusic.init(discordClient);
       TwitchChannelManager.init(discordClient);
-      YoutubeDownloader.init(discordClient);
     });
+    WaffleMusic.init(discordClient);
+    OwnerCommands.init(discordClient);
+    GenericResponse.init(discordClient);
+    YoutubeDownloader.init(discordClient);
     discordClient.user.setPresence({ activity: { name: "", type: "" } });
   })
   .on("message", (msg) => messageHandler.handleMessage(msg))

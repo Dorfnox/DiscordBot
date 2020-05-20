@@ -1,37 +1,128 @@
-const WaffleResponse = require("./WaffleResponse");
+const ArgumentHandler = require("./ArgumentHandler");
 const {
   getNumberFromArguments,
+  getCategoryCmds,
+  logger,
   paginateArray,
+  randomFromArray,
+  sendChannel,
   zeroWidthSpaceChar,
 } = require("../util/WaffleUtil");
-const ArgumentHandler = require("./ArgumentHandler");
-const { link: inviteLink, botImgUrl } = require("../../configWaffleBot").invite;
-const {
-  getSafe,
-  randomFromArray,
-  randomMusicEmoji,
-} = require("../util/WaffleUtil");
+const { invite, chat } = require("../../configWaffleBot");
+const { link: inviteLink, botImgUrl } = invite;
+const { cmdCategory, prefixes } = chat;
 
 class GenericResponse {
-  constructor(discordClient) {
+  static init(discordClient) {
     this.discordClient = discordClient;
+    this.argHandler = new ArgumentHandler()
+      .addCmdsForCategory("General", "Drip", () => this.drip())
+      .addCmdsForCategory("General", "Feed", () => this.feed())
+      .addCmdsForCategory("General", "Help", (msg, args) =>
+        this.help(msg, args)
+      )
+      .addCmdsForCategory("General", "How", () => this.how())
+      .addCmdsForCategory("General", "Invite", () => this.invite())
+      .addCmdsForCategory("General", "Nani", () => this.nani())
+      .addCmdsForCategory("General", "Ping", (msg) => this.ping(msg))
+      .addCmdsForCategory("General", "Salt", () => this.salt())
+      .addCmdsForCategory("General", "Say", (msg, args) => this.say(msg, args))
+      .addCmdsForCategory("General", "Servers", (msg, args) =>
+        this.servers(msg, args)
+      )
+      .addCmdsForCategory("General", "SuperSay", (msg, args) =>
+        this.superSay(msg, args)
+      )
+      .addCmdsForCategory("General", "Statistics", () => this.statistics());
+    this.helpArgHandler = new ArgumentHandler().addCmds(
+      cmdCategory.map((cc) => cc.category)
+    );
+    this.ready = true;
   }
 
-  drip(msg) {
-    new WaffleResponse().setResponse("Driiiiiiiiiiiiip").reply(msg);
-  }
+  static messageConsumer(msg, args) {
+    const { guild, channel, content } = msg;
+    const { name: guildName } = guild;
+    const { name: channelName } = channel;
+    const { username } = msg.author;
+    // Initialize context
+    const ctx = { guildName, username, content, err: null };
 
-  feed(msg) {
-    new WaffleResponse().setResponse("OMNOMOMNOMOMNOM").reply(msg);
-  }
-
-  how(msg, args) {
-    if (args.join(" ").toLowerCase().startsWith("old is ken")) {
-      new WaffleResponse().setResponse("Kendron is a baby boi!").reply(msg);
+    // Exit if not initialized
+    if (!this.ready) {
+      ctx.err = `Feature is down at the moment`;
+      return sendChannel(channel, { description: ctx.err }, ctx);
     }
+
+    // Collect arguments
+    const parseRes = this.argHandler.parseArguments(args);
+    if (!parseRes.exists) {
+      return;
+    }
+
+    // Execute argument function
+    parseRes
+      .value(msg, ArgumentHandler.removeArgs(args, parseRes.parseLength))
+      .then((embed) => {
+        if (typeof embed === "string") {
+          logger(guildName, channelName, username, content);
+          return msg.channel.send(embed).catch(console.log);
+        }
+        sendChannel(channel, embed, ctx);
+      })
+      .catch((err) => {
+        ctx.err = err;
+        sendChannel(channel, { description: ctx.err }, ctx);
+      });
   }
 
-  invite(msg) {
+  static drip() {
+    const description = "Driiiiiiiiiiiiip";
+    return Promise.resolve({ description });
+  }
+
+  static feed() {
+    const description = "OMNOMOMNOMOMNOM";
+    return Promise.resolve({ description });
+  }
+
+  static help(msg, helpArg) {
+    const parseArg = this.helpArgHandler.parseArguments(helpArg);
+    let title, description;
+    if (parseArg.exists) {
+      helpArg = helpArg.replace(/\s.*/, "");
+      const cmdObj = getCategoryCmds(helpArg);
+      title = `${cmdObj.category} | ${cmdObj.description}`;
+      description = cmdObj.cmdSubCategory
+        .filter((csc) => !csc.hideFromHelp)
+        .map((csc) => {
+          return `**${csc.name}**
+          ${csc.description}
+          > \`${csc.cmds.join("`, `")}\``;
+        })
+        .join("\n\n");
+    } else {
+      title = "Help | Try 'w help *category*' for further help";
+      description = cmdCategory
+        .map((cc) => {
+          return `**${cc.category}**
+          > ${cc.description}`;
+        })
+        .join("\n\n");
+    }
+    const url = `https://www.youtube.com/watch?v=ZZ5LpwO-An4`;
+    const footer = {
+      text: `Waffle prefixes: ${prefixes.join(", ")}`,
+    };
+    return Promise.resolve({ url, title, description, footer });
+  }
+
+  static how() {
+    const description = "Kendron is a baby boi!";
+    return Promise.resolve({ description });
+  }
+
+  static invite() {
     const author = {
       name: "WaffleBot",
       url: inviteLink,
@@ -46,39 +137,29 @@ class GenericResponse {
       "\n\n> Enable WaffleBot to keep a channel clean of all bot messages." +
       "\n\n> DM WaffleBot for a direct line to server staff, similar to mod mail." +
       "\n\n... and plenty more features!\n";
-    const image = {
-      url: botImgUrl,
-    };
     const footer = {
       icon_url:
         "https://avatars3.githubusercontent.com/u/4779114?s=460&u=6c94cfa74ecf585f755eb0bb22a061b79b29bbf5&v=4",
       text:
         "WaffleBot created by Dorfnox | https://github.com/Dorfnox/DiscordBot",
     };
-    new WaffleResponse()
-      .setEmbeddedResponse({ author, title, url, description, image, footer })
-      .reply(msg)
-      .catch((err) => console.log(err));
+    return Promise.resolve({ author, title, url, description, footer });
   }
 
-  nani(msg) {
-    new WaffleResponse()
-      .setResponse(
-        "*Nani the fuck did you just fucking iimasu about watashi, you chiisai bitch desuka? Watashi'll have anata know that watashi graduated top of my class in Nihongo 3, and watashi've been involved in iroirona Nihongo tutoring sessions, and watashi have over sanbyaku perfect test scores. Watashi am trained in kanji, and watashi is the top letter writer in all of southern California. Anata are nothing to watashi but just another weeaboo. Watashi will korosu anata the fuck out with vocabulary the likes of which has neber meen mimasu'd before on this continent, mark watashino fucking words. Anata thinks that anata can get away with hanashimasing that kuso to watashi over the intaaneto? Omou again, fucker. As we hanashimasu, watashi am contacting watashino secret netto of otakus accross the USA, and anatano IP is being traced right now so you better junbishimasu for the ame, ujimushi. The ame that korosu's the pathetic chiisai thing anata calls anatano life. You're fucking shinimashita'd, akachan.*"
-      )
-      .setLogResponseLimit(30)
-      .reply(msg);
+  static nani() {
+    const description =
+      "*Nani the fuck did you just fucking iimasu about watashi, you chiisai bitch desuka? Watashi'll have anata know that watashi graduated top of my class in Nihongo 3, and watashi've been involved in iroirona Nihongo tutoring sessions, and watashi have over sanbyaku perfect test scores. Watashi am trained in kanji, and watashi is the top letter writer in all of southern California. Anata are nothing to watashi but just another weeaboo. Watashi will korosu anata the fuck out with vocabulary the likes of which has neber meen mimasu'd before on this continent, mark watashino fucking words. Anata thinks that anata can get away with hanashimasing that kuso to watashi over the intaaneto? Omou again, fucker. As we hanashimasu, watashi am contacting watashino secret netto of otakus accross the USA, and anatano IP is being traced right now so you better junbishimasu for the ame, ujimushi. The ame that korosu's the pathetic chiisai thing anata calls anatano life. You're fucking shinimashita'd, akachan.*";
+    return Promise.resolve({ description });
   }
 
-  ping(msg) {
-    new WaffleResponse()
-      .setResponse(
-        `PONG! Your ping is **${Date.now() - msg.createdAt.getTime()}ms**`
-      )
-      .reply(msg);
+  static ping(msg) {
+    const description = `PONG! Your ping is **${
+      Date.now() - msg.createdAt.getTime()
+    }ms**`;
+    return Promise.resolve({ description });
   }
 
-  salt(msg) {
+  static salt() {
     const saltReplies = [
       `:salt:`,
       `WHY ARE YOU BEING SO SALTY`,
@@ -89,42 +170,60 @@ class GenericResponse {
       `https://live.staticflickr.com/3953/15738368411_266702863c_b.jpg`,
       `https://ih0.redbubble.net/image.500606301.2517/raf,750x1000,075,t,fafafa:ca443f4786.u1.jpg`,
     ];
-    getSafe(() => msg.channel.send(randomFromArray(saltReplies)));
+    return Promise.resolve(randomFromArray(saltReplies));
   }
 
-  say(msg, args) {
-    let text;
-    if (Math.random() > 0.14) {
-      text = !args.length
-        ? "Can't repeat what isn't said, you naughty, naughty person"
-        : args.join(" ");
+  static say(msg, args) {
+    let description;
+    if (!args) {
+      description =
+        "Can't repeat what isn't said, you naughty, naughty person.";
+    } else if (Math.random() > 0.14) {
+      description = args;
     } else {
-      text = "Sorry, I'm not saying that... I don’t speak bullshit.";
+      description = "😜 Sorry, I'm not saying that... I don’t speak bullshit.";
     }
-    new WaffleResponse().setResponse(text).reply(msg);
+    return Promise.resolve({ description });
   }
 
-  superSay(msg, args) {
-    const text = ArgumentHandler.removeArgs(args, 1);
-    if (!text) {
-      return;
+  static servers(msg, args) {
+    const guildNames = this.discordClient.guilds.cache
+      .array()
+      .map((g) => g.name);
+    const pageSize = 25;
+    const pageCount = Math.ceil(guildNames.length / pageSize);
+    const pageArg = Math.min(
+      getNumberFromArguments(ArgumentHandler.removeArgs(args, 1)) || 1,
+      pageCount
+    );
+    const sp = ` ${zeroWidthSpaceChar} `;
+
+    const title = "Servers WaffleBot is in";
+    const description = paginateArray(guildNames, pageArg, pageSize).join("\n");
+    const footer = {
+      text: `📘 Page ${pageArg} of ${pageCount} ${sp} | ${sp} w servers pageNumber`,
+    };
+    return Promise.resolve({ title, description, footer });
+  }
+
+  static superSay(msg, description) {
+    if (!description) {
+      return Promise.resolve({
+        description: "⚠️ Nothing for waffle to supersay ？_？",
+      });
     }
-    msg
+    return msg
       .delete()
       .then(() => {
-        new WaffleResponse()
-          .setEmbeddedResponse({ description: text })
-          .reply(msg);
+        return { description };
       })
       .catch((err) => {
-        console.log(err);
-        const description =
-          "⚠️ I don't have permission to remove your message ><";
-        new WaffleResponse().setEmbeddedResponse({ description }).reply(msg);
+        console.log("superSay Err:", err);
+        throw "⚠️ Meanie Staff haven't given me permission to remove your messages :P";
       });
   }
 
-  serverStats(msg) {
+  static statistics() {
     const { uptime, guilds, user } = this.discordClient;
     const guildCount = guilds.cache.size;
     const uptimeSeconds = (uptime || 0) / 1000;
@@ -142,33 +241,7 @@ class GenericResponse {
       { name: "# of Servers", value: guildCount, inline },
       { name: "uptime", value: time, inline },
     ];
-    new WaffleResponse()
-      .setEmbeddedResponse({
-        thumbnail,
-        title,
-        fields,
-      })
-      .reply(msg);
-  }
-
-  serverList(msg, args) {
-    const guildNames = this.discordClient.guilds.cache.array().map(g => g.name);
-    const pageSize = 25;
-    const pageCount = Math.ceil(guildNames.length / pageSize);
-    const pageArg = Math.min(
-      getNumberFromArguments(ArgumentHandler.removeArgs(args, 1)) || 1,
-      pageCount
-    );
-    const sp = ` ${zeroWidthSpaceChar} `;
-
-    const title = "Servers WaffleBot is in";
-    const description = paginateArray(guildNames, pageArg, pageSize).join("\n");
-    const footer = {
-      text: `📘 Page ${pageArg} of ${pageCount} ${sp} | ${sp} w servers pageNumber`,
-    };
-    new WaffleResponse()
-      .setEmbeddedResponse({ title, description, footer })
-      .reply(msg);
+    return Promise.resolve({ thumbnail, title, fields });
   }
 }
 

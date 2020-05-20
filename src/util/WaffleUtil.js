@@ -1,4 +1,6 @@
-const { ownerIds } = require("../../configWaffleBot").owner;
+const { owner, chat } = require("../../configWaffleBot");
+const { ownerIds } = owner;
+const { cmdCategory } = chat;
 
 // For use with Maps in the form: Map<k>:Set<v>
 function addValueToMapSet(map, key, setValue) {
@@ -46,6 +48,30 @@ function dynamicStrSpaceFill(str, longestStrLen) {
   return str;
 }
 
+function getCategoryCmds(category, subCategory = null) {
+  category = category.toLowerCase();
+  const categoryObject = cmdCategory.find(
+    (cc) => cc.category.toLowerCase() === category
+  );
+  if (!categoryObject) {
+    throw `Missing Category: ${category}`;
+  } else if (!subCategory) {
+    return categoryObject;
+  }
+  return getCategorySubCmds(categoryObject, subCategory);
+}
+
+function getCategorySubCmds(categoryObject, subCategory) {
+  subCategory = subCategory.toLowerCase();
+  const subCategoryObject = categoryObject.cmdSubCategory.find(
+    (csc) => csc.name.toLowerCase() === subCategory
+  );
+  if (!subCategoryObject) {
+    throw `Missing Sub-category: ${subCategory}`;
+  }
+  return subCategoryObject;
+}
+
 function getNumberFromArguments(argString, isPositive = false) {
   return getSafe(() => {
     const matches = argString.match(/\d+/);
@@ -71,12 +97,16 @@ function getSafe(fn, defaultVal = null, errCallback = null) {
   }
 }
 
+function isOwner(guildMember) {
+  return ownerIds.indexOf(guildMember.user.id) !== -1;
+}
+
 function isStaff(guildMember) {
   return (
     !guildMember.user.bot &&
     (guildMember.hasPermission("KICK_MEMBERS") ||
       guildMember.hasPermission("ADMINISTRATOR") ||
-      ownerIds.indexOf(guildMember.user.id) !== -1)
+      isOwner(guildMember))
   );
 }
 
@@ -85,9 +115,11 @@ function jsonCopy(json) {
 }
 
 function logger(guildName, channelName, username, content, err = null) {
-  const readableDate = new Date().toUTCString();
+  const readableDate = new Date().toLocaleString();
   setTimeout(() => {
-    const logMessage = `\n[${readableDate} | ${guildName}, ${channelName}, ${username}]\n_REQ: ${content}${err ? `\n_ERR: ${err}` : ""}`;
+    const logMessage = `\n[${readableDate} | ${guildName}, ${channelName}, ${username}]\n_REQ: ${content}${
+      err ? `\n_ERR: ${err}` : ""
+    }`;
     console.log(logMessage);
   }, 100);
 }
@@ -131,8 +163,16 @@ function retry(fn, retries = 3, timeoutMilliseconds = 0, err = null) {
 function sendChannel(
   channel,
   embed,
-  { guildName = "...", username = "...", content = "", err = null}
+  { guildName = "...", username = "...", content = "", err = null }
 ) {
+  // Overwrite default options
+  embed = Object.assign(
+    {
+      color: randomWaffleColor(),
+    },
+    { ...embed }
+  );
+  // Send to channel
   return channel
     .send({ embed })
     .then((sentMsg) => {
@@ -172,8 +212,11 @@ module.exports = {
   decrementMaxMap,
   deleteValueFromMapSet,
   dynamicStrSpaceFill,
+  getCategoryCmds,
+  getCategorySubCmds,
   getNumberFromArguments,
   getSafe,
+  isOwner,
   isStaff,
   jsonCopy,
   logger,
