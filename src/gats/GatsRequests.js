@@ -20,20 +20,41 @@ class GatsRequests {
 
   static requestClanStatsData(clanName) {
     const url = `https://stats.gats.io/clan/${clanName}`;
-    return GatsRequests._requestStatsData(url);
+    return this._requestStatsData(url);
   }
 
   static requestPlayerStatsData(playerName) {
     const url = `https://stats.gats.io/${playerName}`;
-    return GatsRequests._requestStatsData(url);
+    return this._requestStatsData(url);
   }
 
-  static requestTopClanStatsData() {
-    const url = `https://stats.gats.io/clans/top`;
-    return GatsRequests._loadCheerioData(url)
+  static requestTopPlayerStatsData(url) {
+    return this._loadCheerioData(url)
       .then(cdata => {
         // Collect Title
-        const title = cdata('#normalMenu a.active').text();
+        const title = `Players | ${cdata('#normalMenu a.active').text().trim()}`;
+
+        // Collect Top / Highest / Longest Stats
+        const stats = cdata(`#pageContainer > div > div.col-xs-12.col-sm-8.col-md-8 > table > tbody > tr`).map((_, elem) => {
+          const rank = getSafe(() => elem.children[1].children[0].data.trim(), '?');
+          const tempNames = getSafe(() => elem.children[3].children[1].children[0].data.trim().split('\n'), 'unknown');
+          const username = getSafe(() => tempNames[tempNames.length - 1], 'unknown');
+          const clanName = getSafe(() => tempNames.length > 1 ? tempNames[0].replace(/[\[\]]+/g, '') : '', 'unknown');
+          const hasClan = clanName.length > 0;
+          const score = getSafe(() => elem.children[5].children[0].data.trim(), 'unknown');
+          const isVip = getSafe(() => elem.children[3].children[3].attribs.class === 'vip-logo-small', false);
+          return { rank, username, clanName, hasClan, score, isVip };
+        }).get();
+
+        return { title, url, stats };
+      });
+  }
+
+  static requestTopClanStatsData(url) {
+    return this._loadCheerioData(url)
+      .then(cdata => {
+        // Collect Title
+        const title = `Clans | ${cdata('#dropdownMenu1').text().trim()}`;
 
         // Collect Clan Stats
         const stats = cdata(`#pageContainer > div > div.col-xs-12.col-sm-8.col-md-8 > table > tbody > tr`).map((_, elem) => {
@@ -49,35 +70,14 @@ class GatsRequests {
       });
   }
 
-  static requestTopPlayerStatsData(url) {
-    return GatsRequests._loadCheerioData(url)
-      .then(cdata => {
-        // Collect Title
-        const title = cdata('#normalMenu a.active').text();
-
-        // Collect Top / Highest / Longest Stats
-        const stats = cdata(`#pageContainer > div > div.col-xs-12.col-sm-8.col-md-8 > table > tbody > tr`).map((_, elem) => {
-          const rank = getSafe(() => elem.children[1].children[0].data.trim(), '?');
-          const tempNames = getSafe(() => elem.children[3].children[1].children[0].data.trim().split('\n'), 'unknown');
-          const username = getSafe(() => tempNames[tempNames.length - 1], 'unknown');
-          const clanName = getSafe(() => tempNames.length > 1 ? tempNames[0].replace(/[\[\]]+/g, '') : '', 'unknown');
-          const hasClan = clanName.length > 0;
-          const score = getSafe(() => elem.children[5].children[0].data.trim(), 'unknown');
-          return { rank, username, clanName, hasClan, score };
-        }).get();
-
-        return { title, url, stats };
-      });
-  }
-
   static requestTopFiveData() {
     const now = Date.now();
-    const { lastRequest, siteUrl, mutexLock } = GatsRequests.gatsCache.highScoresData;
+    const { lastRequest, siteUrl, mutexLock } = this.gatsCache.highScoresData;
     // Only update cache if it's been more than the longevity of the cache config. Default to 120 seconds.
     if (!mutexLock && now - lastRequest > Math.max(0, (topFiveCacheLongevityInSeconds || 120) * 1000)) {
 
       // Lock further spam requests
-      GatsRequests.gatsCache.highScoresData.mutexLock = true;
+      this.gatsCache.highScoresData.mutexLock = true;
 
       // Open site
       return Nightmare({ show: false, gotoTimeout: 15000, waitTimeout: 15000 })
@@ -103,8 +103,8 @@ class GatsRequests {
                 data[idx].playerStats = v;
               });
               // Update Cache
-              GatsRequests.gatsCache.highScoresData.lastRequest = now;
-              GatsRequests.gatsCache.highScoresData.data = data;
+              this.gatsCache.highScoresData.lastRequest = now;
+              this.gatsCache.highScoresData.data = data;
               return data;
             });
         })
@@ -115,21 +115,25 @@ class GatsRequests {
         })
         .finally(() => {
           // Unlock mutex
-          GatsRequests.gatsCache.highScoresData.mutexLock = false;
+          this.gatsCache.highScoresData.mutexLock = false;
         });
     }
     // If cache update intrval has not been reached yet, or there is a mutex lock in place.
-    return Promise.resolve(GatsRequests.gatsCache.highScoresData.data);
+    return Promise.resolve(this.gatsCache.highScoresData.data);
   }
 
   static _loadCheerioData(url) {
     return axios.get(url)
       .then(response => response.data)
-      .then(data => cheerio.load(data, { normalizeWhitespace: true }));
+      .then(data => cheerio.load(data, { normalizeWhitespace: true }))
+      .catch(err => {
+        console.log('_loadCheerioData Err:', err);
+        throw '⚠️ Unable to request / load data for cheerio';
+      });
   }
 
   static _requestStatsData(url) {
-    return GatsRequests._loadCheerioData(url)
+    return this._loadCheerioData(url)
       .then(cdata => {
         const vipSelector = `#pageContainer > h1`;
         const nameSelector = (nthChild) => `#pageContainer > div:nth-child(${nthChild}) > div:nth-child(1) > h1`;
@@ -168,6 +172,10 @@ class GatsRequests {
         }).get();
 
         return { url, name, stats, favoriteLoadouts, vip };
+      })
+      .catch(err => {
+        console.log("_requestStatsData Err: ", url, err);
+        throw '⚠️ Unable to request stats data';
       });
   }
 }

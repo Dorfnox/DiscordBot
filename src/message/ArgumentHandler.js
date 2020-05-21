@@ -38,7 +38,8 @@ class ArgumentHandler {
       // Set argMap to: Map<argsLen, Map<cmd, value>>
       this.argMap.set(argArray.length, new Map());
       this.lengthArray.push(argArray.length);
-      this.lengthArray.sort((a, b) => a - b);
+      // Sort from highest -> lowest
+      this.lengthArray.sort((a, b) => b - a);
     }
     // Returns a Map<cmd, value>
     const cmdMap = this.argMap.get(argArray.length);
@@ -95,7 +96,7 @@ class ArgumentHandler {
       result.parseLength += 1;
     }
 
-    // Parse from lowest -> highest (greedy match)
+    // Parse from highest -> lowest (greedy match)
     this.lengthArray.some((l) => {
       const key = argArray.slice(0, l).join(" ");
       const cmdMap = this.argMap.get(l);

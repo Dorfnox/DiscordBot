@@ -4,6 +4,7 @@ const WaffleMongo = require("./src/data-layer/WaffleMongo");
 const GuildSettingsManager = require("./src/data-managers/GuildSettingsManager");
 const TwitchChannelManager = require("./src/data-managers/TwitchChannelManager");
 const WaffleMusic = require("./src/music/WaffleMusic2");
+const GatsScraper = require("./src/gats/GatsScraper");
 const YoutubeDownloader = require("./src/music/YoutubeDownloader");
 const GenericResponse = require("./src/message/GenericResponse");
 const OwnerCommands = require("./src/owner/OwnerCommands");
@@ -23,6 +24,7 @@ discordClient
       TwitchChannelManager.init(discordClient);
     });
     WaffleMusic.init(discordClient);
+    GatsScraper.init(discordClient);
     OwnerCommands.init(discordClient);
     GenericResponse.init(discordClient);
     YoutubeDownloader.init(discordClient);

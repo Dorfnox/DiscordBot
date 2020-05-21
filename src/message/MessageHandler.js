@@ -22,12 +22,14 @@ const { modMailChannelCategoryName } = config.modMail;
 class MessageHandler {
   constructor(client) {
     this.client = client;
-    this.gatsScraper = new GatsScraper();
     this.pokemon = new Pokemon();
     this.waffleMail = new WaffleMail(client);
     this.cmdHandler = new ArgumentHandler()
       .addCmdsForCategory("Admin", null, (msg, args) =>
         GuildSettingsManager.messageConsumer(msg, args)
+      )
+      .addCmdsForCategory("Gats", null, (msg, args) =>
+        GatsScraper.messageConsumer(msg, args)
       )
       .addCmdsForCategory("General", null, (msg, args) =>
         GenericResponse.messageConsumer(msg, args)
@@ -46,42 +48,17 @@ class MessageHandler {
         YoutubeDownloader.messageConsumer(msg, args)
       );
     this.commands = {
-      clanstats: {
-        name: "Clanstats",
-        execute: this.executeClanstats,
-        description: `Displays the stats of a clan (eg: 'w clanstats kcgo').`,
-        aliases: ["cs"],
-      },
-      playerstats: {
-        name: "PlayerStats",
-        execute: this.executePlayerstats,
-        description:
-          "Displays the stats of a player (eg: w playerstats dorfnox).",
-        aliases: ["ps"],
-      },
       "p!hint": {
         name: "p!hint",
         execute: (msg) => this.pokemon.processNextPokeBotMessage(msg),
         description: `Run 'w p!hint' before running 'p!hint' for a little ***more*** help.`,
-      },
-      top: {
-        name: "Top",
-        execute: this.executeTop,
-        description:
-          "Returns top clans, best snipers, highest scores, etc... eg: w best snipers",
-        aliases: ["best", "highest", "most", "longest"],
-      },
-      top5: {
-        name: "Top5",
-        execute: this.executeTopFive,
-        description: "Get the top five players from the gats leaderboard.",
       },
     };
   }
 
   handleMessage(msg) {
     const { content, guild, channel, author } = msg;
-    const { bot: isBot } = author;
+    const { bot: isBot, username } = author;
 
     if (!author) {
       return;
@@ -123,35 +100,21 @@ class MessageHandler {
         getSafe(() => logger(guild.name, channel.name, author.username, err));
         console.log(err);
       }
-      return;
+    } else {
+      // No existing command found.
+      const replies = [
+        `That doesn't make any sense!`,
+        "The heck are you expecting me to do?",
+        "I know what you did last summer.",
+      ];
+      const description = randomFromArray(replies);
+      const { name: guildName } = guild;
+      sendChannel(
+        channel,
+        { description },
+        { guildName, username, content, err: "Bad args" }
+      );
     }
-
-    // No existing command found.
-    const replies = [
-      `That doesn't make any sense!`,
-      "The heck are you expecting me to do?",
-      "I know what you did last summer.",
-    ];
-    const description = randomFromArray(replies);
-    const { name: guildName } = guild;
-    const { username } = author;
-    sendChannel(channel, { description }, { guildName, username, content, err: 'Bad args' });
-  }
-
-  executeClanstats(msg, args) {
-    this.gatsScraper.clanstats(args).then((wr) => wr.reply(msg));
-  }
-
-  executePlayerstats(msg, args) {
-    this.gatsScraper.playerstats(args).then((wr) => wr.reply(msg));
-  }
-
-  executeTop(msg, args) {
-    this.gatsScraper.top(args).then((wr) => wr.reply(msg));
-  }
-
-  executeTopFive(msg) {
-    this.gatsScraper.getTopFive().then((wr) => wr.reply(msg));
   }
 }
 

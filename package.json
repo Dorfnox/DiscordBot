@@ -20,6 +20,6 @@
     "node-cache": "^5.1.0",
     "node-gyp": "^6.1.0",
     "yt-search": "^1.1.2",
-    "ytdl-core": "^2.1.2"
+    "ytdl-core": "^2.1.4"
   }
 }
