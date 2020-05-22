@@ -6,11 +6,13 @@ class Pokemon {
   static init(discordClient) {
     this.discordClient = discordClient;
     this.channelSet = new Set();
-    this.pokeArgs = new ArgumentHandler().addCmdsForCategory(
-      "Pokemon",
-      "P!Hint",
-      (msg) => this.processNextPokeBotMessage(msg)
-    );
+    this.pokeArgs = new ArgumentHandler()
+      .addCmdsForCategory("Pokemon", "P!Hint", (msg) =>
+        this.processNextPokeBotMessage(msg)
+      )
+      .addCmdsForCategory("Pokemon", "WhoDatPokemon", (msg) =>
+        this.whoDatPokemon(msg)
+      );
     this._requestPokemon()
       .then((allPokemon) => {
         this.allPokemon = allPokemon;
@@ -102,6 +104,46 @@ class Pokemon {
     // Clean up channel set on end / dispose
     collector.on("end", () => this.channelSet.delete(channelId));
     collector.on("dispose", () => this.channelSet.delete(channelId));
+  }
+
+  static whoDatPokemon(msg) {
+    const { guild, channel, content, author, id: msgId } = msg;
+    const { name: guildName } = guild;
+    const { username } = author;
+    const { messages } = channel;
+    const ctx = { guildName, username, content, err: null }
+    messages.fetch({ limit: 10, before: msgId }).then((msgs) => {
+      // Initial msg validation
+      if (!msgs || msgs.length < 10) {
+        ctx.err = '⚠️ Have at least 10 messages in your channel before using this feature.';
+        return sendChannel(channel, { description: ctx.err }, ctx);
+      }
+
+      // Filter out all pokechord messages
+      const pokeFilter = (m) =>
+        m.author &&
+        m.author.bot &&
+        m.author.id == "365975655608745985" &&
+        m.embeds &&
+        m.embeds[0].description.startsWith("Guess the pokémon");
+      const pokeMessages = msgs.filter(pokeFilter);
+      if (!pokeMessages.length) {
+        ctx.err = 'The Pokéchord message must be at most 10 messages back';
+        return sendChannel(channel, { description: ctx.err }, ctx);
+      }
+
+      // Get latest pokechord message image url
+      const pokeMessage = pokeMessages[pokeMessages.length - 1];
+      const { url } = pokeMessage.embeds[0].image;
+
+      // Perform google reverse-image search
+      
+    })
+    .catch(err => {
+      console.log("whoDatPokemon Err:", err);
+      ctx.err = '⚠️ I may not have permssion to retrieve messages in this channel. Check with staff.';
+      return sendChannel(channel, { description: ctx.err }, ctx);
+    });
   }
 
   static _findPokemon(incompletePokeString) {
