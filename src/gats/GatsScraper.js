@@ -446,7 +446,7 @@ class GatsScraper {
     return GatsRequests.requestPlayerStatsData(playerName)
       .then((allStats) => {
         if (!allStats || !allStats.stats || !allStats.stats[0]) {
-          throw `*No stats found for player* **${playerName}**. Maybe you made a typo?`;
+          return { description: `⚠️ No stats found for player **${playerName}**. Maybe you made a typo?` };
         }
         const { stats, favoriteLoadouts, vip } = allStats;
         const title = `Player Stats for ${allStats.name}`;
@@ -480,7 +480,7 @@ class GatsScraper {
     return GatsRequests.requestClanStatsData(clanName)
       .then((allStats) => {
         if (!allStats || !allStats.stats || !allStats.stats[0]) {
-          throw `*No stats found for clan* **${clanName}**. Maybe you made a typo?`;
+          return { description: `⚠️ No stats found for clan **${clanName}**. Maybe you made a typo?` };
         }
         const { stats, favoriteLoadouts } = allStats;
         const title = `Clan Stats for ${allStats.name}`;
@@ -555,7 +555,7 @@ class GatsScraper {
         // Thumbnail
         const thumbnail = { url: gatsLogoUrl };
 
-        // Desscription
+        // Description
         const description = `\n${sp2}\n`.concat(
           data
             .map((p) => {
