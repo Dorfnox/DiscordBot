@@ -261,8 +261,8 @@ class GatsScraper {
           this._topClanStats(this.clanStatsUrl("totalmembers", pageNum)),
         true
       );
-    // TODO: Add clan-only cmds: ScorePerMember, KillsPerMember, TotalMembers
     this.ready = true;
+    console.log("✅ GatsScraper is ready.");
   }
 
   // High-level handler
@@ -445,7 +445,9 @@ class GatsScraper {
     return GatsRequests.requestPlayerStatsData(playerName)
       .then((allStats) => {
         if (!allStats || !allStats.stats || !allStats.stats[0]) {
-          return { description: `⚠️ No stats found for player **${playerName}**. Maybe you made a typo?` };
+          return {
+            description: `⚠️ No stats found for player **${playerName}**. Maybe you made a typo?`,
+          };
         }
         const { stats, favoriteLoadouts, vip } = allStats;
         const title = `Player Stats for ${allStats.name}`;
@@ -479,7 +481,9 @@ class GatsScraper {
     return GatsRequests.requestClanStatsData(clanName)
       .then((allStats) => {
         if (!allStats || !allStats.stats || !allStats.stats[0]) {
-          return { description: `⚠️ No stats found for clan **${clanName}**. Maybe you made a typo?` };
+          return {
+            description: `⚠️ No stats found for clan **${clanName}**. Maybe you made a typo?`,
+          };
         }
         const { stats, favoriteLoadouts } = allStats;
         const title = `Clan Stats for ${allStats.name}`;

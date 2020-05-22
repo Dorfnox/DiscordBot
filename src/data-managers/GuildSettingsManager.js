@@ -1,19 +1,19 @@
 const GuildSettingsData = require("../data-layer/GuildSettingsData");
 const WaffleResponse = require("../message/WaffleResponse");
 const ArgumentHandler = require("../message/ArgumentHandler");
-const { getCategoryCmds, isStaff, sendChannel } = require("../util/WaffleUtil");
-const { cmdCategory } = require("../../configWaffleBot").chat;
+const { isStaff, sendChannel } = require("../util/WaffleUtil");
 
 class GuildSettingsManager {
   static init(discordClient) {
     this.discordClient = discordClient;
     this.guildSettingsData = new GuildSettingsData();
-    this.ready = true;
     this.argHandler = new ArgumentHandler()
       .addCmdsForCategory("Admin", "Screwbots", (msg) => this.screwbots(msg))
       .addCmdsForCategory("Admin", "Unscrewbots", (msg) =>
         this.unscrewbots(msg)
       );
+    this.ready = true;
+    console.log("✅ GuildSettingsManager is ready.");
   }
 
   static messageConsumer(msg, args) {
@@ -22,7 +22,7 @@ class GuildSettingsManager {
     const { name: guildName } = guild;
     const { username } = msg.author;
     const ctx = { guildName, username, content, err: null };
-    
+
     // Validate executability
     if (!this.ready) {
       ctx.err = `Feature is down at the moment`;
@@ -37,7 +37,7 @@ class GuildSettingsManager {
     if (!parseRes.exists) {
       return;
     }
-    
+
     // Execute argument function
     parseRes
       .value(msg)

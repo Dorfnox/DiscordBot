@@ -297,6 +297,20 @@
         ]
       },
       {
+        "category": "Pokemon",
+        "description": "Interacts with PokeChord.",
+        "cmdSubCategory": [
+          {
+            "name": "P!Hint",
+            "description": "Run 'w p!hint' before running 'p!hint' for a little ***more*** help.",
+            "cmds": ["p!hint", "p hint"],
+            "concatenatable": true,
+            "hideFromHelp": false,
+            "appendHelpExamples": []
+          }
+        ]
+      },
+      {
         "category": "3rdPartyIntegrations",
         "description": "Integrate with applcations like Twitch, letting you know when a streamer goes live.",
         "cmdSubCategory": [

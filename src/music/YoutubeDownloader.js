@@ -1,9 +1,8 @@
 const Discord = require("discord.js");
 const ArgumentHandler = require("../message/ArgumentHandler");
-const WaffleResponse = require('../message/WaffleResponse');
+const WaffleResponse = require("../message/WaffleResponse");
 const ytdl = require("ytdl-core");
 const fs = require("fs");
-
 const { getSafe } = require("../util/WaffleUtil");
 const {
   youtubeDownloaders,
@@ -11,20 +10,21 @@ const {
 } = require("../../configWaffleBot").music;
 
 class YoutubeDownloader {
-  static ytArgMap = new ArgumentHandler().addCmds(
-    ["download", "dld", "dl"],
-    (msg, args) => this.download(msg, args)
-  );
-  static busy = false;
-  static fileName = "RenameMe.m4a";
-  static filePath = `${dldFolder}${this.fileName}`;
-
   static init(discordClient) {
     this.discordClient = discordClient;
+    this.ytArgMap = new ArgumentHandler().addCmds(
+      ["download", "dld", "dl"],
+      (msg, args) => this.download(msg, args)
+    );
+    this.busy = false;
+    this.fileName = "RenameMe.m4a";
+    this.filePath = `${dldFolder}${this.fileName}`;
+    this.ready = true;
+    console.log("✅ YoutubeDownloader is ready.");
   }
 
   static messageConsumer(msg, args) {
-    if (!this.discordClient) {
+    if (!this.ready) {
       return new WaffleResponse()
         .setEmbeddedResponse({
           description: "⚠️ Wait a second!",
@@ -47,9 +47,11 @@ class YoutubeDownloader {
     const pRes = this.ytArgMap.parseArguments(args);
     pRes
       .value(msg, ArgumentHandler.removeArgs(args, pRes.parseLength))
-      .then(res => {
+      .then((res) => {
         if (res) {
-          new WaffleResponse().setEmbeddedResponse({ description: res }).reply(msg);
+          new WaffleResponse()
+            .setEmbeddedResponse({ description: res })
+            .reply(msg);
         }
       })
       .catch((err) => {
@@ -90,7 +92,9 @@ class YoutubeDownloader {
       writeableStream.on("error", (err) => {
         clearTimeout(timeout);
         this.busy = false;
-        resolve(`⚠️ An error occurred downloading the stream. Please try again.`);
+        resolve(
+          `⚠️ An error occurred downloading the stream. Please try again.`
+        );
       });
     });
   }

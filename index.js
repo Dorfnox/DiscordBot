@@ -5,10 +5,11 @@ const GuildSettingsManager = require("./src/data-managers/GuildSettingsManager")
 const TwitchChannelManager = require("./src/data-managers/TwitchChannelManager");
 const WaffleMusic = require("./src/music/WaffleMusic2");
 const GatsScraper = require("./src/gats/GatsScraper");
+const Pokemon = require("./src/pokemon/Pokemon");
 const YoutubeDownloader = require("./src/music/YoutubeDownloader");
 const GenericResponse = require("./src/message/GenericResponse");
 const OwnerCommands = require("./src/owner/OwnerCommands");
-const { init, publicIP } = require("./configWaffleBot.json");
+const { init, publicIP } = require("./configWaffleBot");
 const Express = require("express");
 
 /* DISCORD Initialization */
@@ -23,6 +24,7 @@ discordClient
       GuildSettingsManager.init(discordClient);
       TwitchChannelManager.init(discordClient);
     });
+    Pokemon.init(discordClient);
     WaffleMusic.init(discordClient);
     GatsScraper.init(discordClient);
     OwnerCommands.init(discordClient);

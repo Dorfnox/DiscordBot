@@ -10,6 +10,7 @@ class OwnerCommands {
       (msg, args) => this.setStatus(msg, args)
     );
     this.ready = true;
+    console.log("✅ OwnerCommands is ready.");
   }
 
   static setStatus(msg, args) {
@@ -18,12 +19,14 @@ class OwnerCommands {
     }
     const parseResult = this.ownerArgs.parseArguments(args);
     if (!parseResult.exists) {
-      return ;
+      return;
     }
     const status = ArgumentHandler.removeArgs(args, parseResult.parseLength);
-    this.discordClient.user.setPresence({
-      activity: { name: status, type: "PLAYING" },
-    }).catch(console.log);
+    this.discordClient.user
+      .setPresence({
+        activity: { name: status, type: "PLAYING" },
+      })
+      .catch(console.log);
     const { channel, guild, author, content } = msg;
     const { name: guildName } = guild;
     const { username } = author;

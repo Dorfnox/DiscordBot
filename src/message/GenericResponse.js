@@ -38,6 +38,7 @@ class GenericResponse {
       cmdCategory.map((cc) => cc.category)
     );
     this.ready = true;
+    console.log('✅ GenericResponse is ready.');
   }
 
   static messageConsumer(msg, args) {

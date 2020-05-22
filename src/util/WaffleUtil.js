@@ -165,16 +165,20 @@ function sendChannel(
   embed,
   { guildName = "...", username = "...", content = "", err = null }
 ) {
-  // Overwrite default options
-  embed = Object.assign(
-    {
-      color: randomWaffleColor(),
-    },
-    { ...embed }
-  );
+  const sendable =
+    typeof embed === "string"
+      ? embed
+      : {
+          embed: Object.assign(
+            {
+              color: randomWaffleColor(),
+            },
+            { ...embed }
+          ),
+        };
   // Send to channel
   return channel
-    .send({ embed })
+    .send(sendable)
     .then((sentMsg) => {
       logger(guildName, channel.name, username, content, err);
       return sentMsg;

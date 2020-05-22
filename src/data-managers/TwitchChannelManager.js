@@ -12,7 +12,6 @@ class TwitchChannelManager {
   static init(discordClient) {
     this.discordClient = discordClient;
     this.twitchUserData = new TwitchUserData();
-    this.ready = true;
     this.argMap = new ArgumentHandler()
       .addCmdsForCategory(
         "3rdPartyIntegrations",
@@ -24,6 +23,8 @@ class TwitchChannelManager {
         "Twitch Disable",
         (msg, channelArg) => this.enableTwitchNotifications(msg, channelArg)
       );
+    this.ready = true;
+    console.log("✅ TwitchChannelManager is ready.");
   }
 
   /* ~~~ ~~~ ~~~ ~~~ Consumes commands from Discord ~~~ ~~~ ~~~ ~~~ */

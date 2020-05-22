@@ -1,29 +1,27 @@
 const Discord = require("discord.js");
-const GatsScraper = require("../gats/GatsScraper");
-const GenericResponse = require("../message/GenericResponse");
-const WaffleMusic = require("../music/WaffleMusic2");
-const YoutubeDownloader = require("../music/YoutubeDownloader");
 const Pokemon = require("../pokemon/Pokemon");
 const WaffleMail = require("../mail/WaffleMail");
+const WaffleMusic = require("../music/WaffleMusic2");
+const GatsScraper = require("../gats/GatsScraper");
 const OwnerCommands = require("../owner/OwnerCommands");
+const ArgumentHandler = require("./ArgumentHandler");
+const GenericResponse = require("../message/GenericResponse");
+const YoutubeDownloader = require("../music/YoutubeDownloader");
 const GuildSettingsManager = require("../data-managers/GuildSettingsManager");
 const TwitchChannelManager = require("../data-managers/TwitchChannelManager");
-const ArgumentHandler = require("./ArgumentHandler");
 const {
   getSafe,
   logger,
   randomFromArray,
   sendChannel,
 } = require("../util/WaffleUtil");
-const config = require("../../configWaffleBot.json");
-const { prefixes } = config.chat;
-const { modMailChannelCategoryName } = config.modMail;
+const { chat, modMail } = require("../../configWaffleBot.json");
+const { prefixes } = chat;
+const { modMailChannelCategoryName } = modMail;
 
 class MessageHandler {
-  constructor(client) {
-    this.client = client;
-    this.pokemon = new Pokemon();
-    this.waffleMail = new WaffleMail(client);
+  constructor(discordClient) {
+    this.waffleMail = new WaffleMail(discordClient);
     this.cmdHandler = new ArgumentHandler()
       .addCmdsForCategory("Admin", null, (msg, args) =>
         GuildSettingsManager.messageConsumer(msg, args)
@@ -40,6 +38,9 @@ class MessageHandler {
       .addCmdsForCategory("Owner", null, (msg, args) =>
         OwnerCommands.setStatus(msg, args)
       )
+      .addCmdsForCategory("Pokemon", null, (msg, args) =>
+        Pokemon.messageConsumer(msg, args)
+      )
       .addCmdsForCategory("3rdPartyIntegrations", null, (msg, args) =>
         TwitchChannelManager.messageConsumer(msg, args)
       )
@@ -47,13 +48,6 @@ class MessageHandler {
       .addCmds(["download", "dld", "dl"], (msg, args) =>
         YoutubeDownloader.messageConsumer(msg, args)
       );
-    this.commands = {
-      "p!hint": {
-        name: "p!hint",
-        execute: (msg) => this.pokemon.processNextPokeBotMessage(msg),
-        description: `Run 'w p!hint' before running 'p!hint' for a little ***more*** help.`,
-      },
-    };
   }
 
   handleMessage(msg) {
@@ -100,21 +94,22 @@ class MessageHandler {
         getSafe(() => logger(guild.name, channel.name, author.username, err));
         console.log(err);
       }
-    } else {
-      // No existing command found.
-      const replies = [
-        `That doesn't make any sense!`,
-        "The heck are you expecting me to do?",
-        "I know what you did last summer.",
-      ];
-      const description = randomFromArray(replies);
-      const { name: guildName } = guild;
-      sendChannel(
-        channel,
-        { description },
-        { guildName, username, content, err: "Bad args" }
-      );
+      return;
     }
+
+    // No existing command found.
+    const replies = [
+      `That doesn't make any sense!`,
+      "The heck are you expecting me to do?",
+      "I know what you did last summer.",
+    ];
+    const description = randomFromArray(replies);
+    const { name: guildName } = guild;
+    sendChannel(
+      channel,
+      { description },
+      { guildName, username, content, err: "Bad args" }
+    );
   }
 }
 

@@ -14,26 +14,27 @@ const {
 const { highWaterMarkBitShift } = require("../../configWaffleBot.json").music;
 
 class WaffleMusic {
-  static discordClient = null;
-  static serverQueue = new Map(); // Map of guildId -> QueueContract
-  static musicArgMap = new ArgumentHandler()
-    .addCmdsForCategory("Music", "Join", (msg, args) => this.join(msg, args))
-    .addCmdsForCategory("Music", "Leave", (msg) => this.leave(msg))
-    .addCmdsForCategory("Music", "Play", (msg, args) => this.play(msg, args))
-    .addCmdsForCategory("Music", "Queue", (msg) => this.queue(msg))
-    .addCmdsForCategory("Music", "Skip", (msg, args) => this.skip(msg, args))
-    .addCmdsForCategory("Music", "Repeat", (msg) => this.repeat(msg))
-    .addCmdsForCategory("Music", "Song", (msg) => this.song(msg))
-    .addCmdsForCategory("Music", "Oops", (msg) => this.oops(msg))
-    .addCmdsForCategory("Music", "Pause", (msg) => this.pause(msg))
-    .addCmdsForCategory("Music", "Unpause", (msg) => this.unpause(msg));
-
   static init(discordClient) {
     this.discordClient = discordClient;
+    // Map of guildId -> QueueContract
+    this.serverQueue = new Map();
+    this.musicArgMap = new ArgumentHandler()
+      .addCmdsForCategory("Music", "Join", (msg, args) => this.join(msg, args))
+      .addCmdsForCategory("Music", "Leave", (msg) => this.leave(msg))
+      .addCmdsForCategory("Music", "Play", (msg, args) => this.play(msg, args))
+      .addCmdsForCategory("Music", "Queue", (msg) => this.queue(msg))
+      .addCmdsForCategory("Music", "Skip", (msg, args) => this.skip(msg, args))
+      .addCmdsForCategory("Music", "Repeat", (msg) => this.repeat(msg))
+      .addCmdsForCategory("Music", "Song", (msg) => this.song(msg))
+      .addCmdsForCategory("Music", "Oops", (msg) => this.oops(msg))
+      .addCmdsForCategory("Music", "Pause", (msg) => this.pause(msg))
+      .addCmdsForCategory("Music", "Unpause", (msg) => this.unpause(msg));
+    this.ready = true;
+    console.log("✅ WaffleMusic is ready.");
   }
 
   static messageConsumer(msg, args) {
-    if (!this.discordClient) {
+    if (!this.ready) {
       return;
     }
     const pRes = this.musicArgMap.parseArguments(args);
