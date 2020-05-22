@@ -292,7 +292,6 @@ class GatsScraper {
         sendChannel(channel, embed, ctx);
       })
       .catch((err) => {
-        console.log("ERRRRORRRRRR", err);
         ctx.err = err;
         sendChannel(channel, { description: ctx.err }, ctx);
       });
