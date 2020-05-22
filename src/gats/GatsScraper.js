@@ -6,7 +6,7 @@ const {
   getNumberFromArguments,
   randomFromArray,
   sendChannel,
-  zeroWidthSpaceChar,
+  zeroWidthSpaceChar: z,
 } = require("../util/WaffleUtil");
 const { gatsUrl, gatsLogoUrl } = require("./GatsConstants");
 
@@ -30,6 +30,7 @@ class GatsScraper {
         this.playerstats(args)
       )
       .addCmdsForCategory("Gats", "top", (args) => this.top(args))
+      .addCmdsForCategory("Gats", "changelog", (args) => this.changeLog(args))
       .addCmdsForCategory("Gats", "top5", () => this.getTopFive());
 
     // Mid-level breakdown
@@ -291,7 +292,7 @@ class GatsScraper {
         sendChannel(channel, embed, ctx);
       })
       .catch((err) => {
-        console.log('ERRRRORRRRRR', err);
+        console.log("ERRRRORRRRRR", err);
         ctx.err = err;
         sendChannel(channel, { description: ctx.err }, ctx);
       });
@@ -341,8 +342,8 @@ class GatsScraper {
   }
 
   static _topPlayerStats(url) {
-    const sp2 = ` ${zeroWidthSpaceChar} `;
-    const sp3 = ` ${zeroWidthSpaceChar} ${zeroWidthSpaceChar} `;
+    const sp2 = ` ${z} `;
+    const sp3 = ` ${z} ${z} `;
     return GatsRequests.requestTopPlayerStatsData(url)
       .then((data) => {
         const { title, stats, url } = data;
@@ -376,7 +377,7 @@ class GatsScraper {
 
         // build fields
         const fields = {
-          name: zeroWidthSpaceChar,
+          name: z,
           value: `[View these stats online](${url})`,
           inline: false,
         };
@@ -389,8 +390,8 @@ class GatsScraper {
   }
 
   static _topClanStats(url) {
-    const sp2 = ` ${zeroWidthSpaceChar} `;
-    const sp3 = ` ${zeroWidthSpaceChar} ${zeroWidthSpaceChar} `;
+    const sp2 = ` ${z} `;
+    const sp3 = ` ${z} ${z} `;
     return GatsRequests.requestTopClanStatsData(url)
       .then((data) => {
         const { title, stats, url } = data;
@@ -421,7 +422,7 @@ class GatsScraper {
 
         // build fields
         const fields = {
-          name: zeroWidthSpaceChar,
+          name: z,
           value: `[View these stats online](${url})`,
           inline: false,
         };
@@ -437,7 +438,9 @@ class GatsScraper {
 
   static playerstats(args) {
     if (!args) {
-      return Promise.reject("⚠️ Please provide a player name argument. eg: **dorfnox**");
+      return Promise.reject(
+        "⚠️ Please provide a player name argument. eg: **dorfnox**"
+      );
     }
     const playerName = args.split(/\s+/g)[0];
     return GatsRequests.requestPlayerStatsData(playerName)
@@ -452,12 +455,12 @@ class GatsScraper {
         }`.concat(stats.map((s) => `**${s.stat}:** ${s.value}`).join("\n"));
         const thumbnail = { url: favoriteLoadouts[0].imageUrl };
         const fields = [
-          { name: zeroWidthSpaceChar, value: "***Favorite Loadouts***" },
+          { name: z, value: "***Favorite Loadouts***" },
           ...favoriteLoadouts.map((fl) => {
             return { name: fl.stat, value: fl.value, inline: true };
           }),
           {
-            name: zeroWidthSpaceChar,
+            name: z,
             value: `[View these stats online](${allStats.url})`,
           },
         ];
@@ -486,12 +489,12 @@ class GatsScraper {
           .join("\n");
         const thumbnail = { url: favoriteLoadouts[0].imageUrl };
         const fields = [
-          { name: zeroWidthSpaceChar, value: "***Favorite Loadouts***" },
+          { name: z, value: "***Favorite Loadouts***" },
           ...favoriteLoadouts.map((fl) => {
             return { name: fl.stat, value: fl.value, inline: true };
           }),
           {
-            name: zeroWidthSpaceChar,
+            name: z,
             value: `[View these stats online](${allStats.url})`,
           },
         ];
@@ -503,52 +506,82 @@ class GatsScraper {
       });
   }
 
+  /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CHANGELOG ~~~~~~~~~~~~~~~~~ */
+
+  static changeLog() {
+    return GatsRequests.requestChangeLog()
+      .then((data) => {
+        const { date, changes, url } = data;
+        // Title
+        const title = `Changelog | ${date}`;
+
+        // Description
+        const description = `${changes
+          .map((c) => `> ${c}`)
+          .join(`\n> ${z}\n`)}\n\n[View the changelog online](${url})`;
+
+        // Thumbnail
+        const thumbnail = { url: gatsLogoUrl };
+        return { title, description, url, thumbnail };
+      })
+      .catch((err) => {
+        console.log("changeLog Err:", err);
+        throw "⚠️ Unable to request change log data at this time. Bug Dorfnox.";
+      });
+  }
+
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ TOP FIVE LEADERBOARD ~~~~~~~~~~~~~~~~~ */
 
   static getTopFive() {
-    const sp2 = ` ${zeroWidthSpaceChar} `;
-    const sp3 = ` ${zeroWidthSpaceChar} ${zeroWidthSpaceChar} `;
-    return GatsRequests.requestTopFiveData().then((data) => {
-      const wr = new WaffleResponse();
-      if (!data.length) {
-        return wr.setResponse("⚠️ *Could not find gats top five data*");
-      }
-
-      // Get longest str length of scores
-      let longestScore = 0;
-      data.forEach((p) => {
-        if (p.points.length + 1 > longestScore) {
-          longestScore = p.points.length + 1;
+    const sp2 = ` ${z} `;
+    const sp3 = ` ${z} ${z} `;
+    return GatsRequests.requestTopFiveData()
+      .then((data) => {
+        if (!data.length) {
+          throw "⚠️ Could not find gats top five data";
         }
+
+        // Get longest str length of scores
+        let longestScore = 0;
+        data.forEach((p) => {
+          if (p.points.length + 1 > longestScore) {
+            longestScore = p.points.length + 1;
+          }
+        });
+
+        // Title
+        const title = `Current Top Five Players on the Leaderboard`;
+
+        // Thumbnail
+        const thumbnail = { url: gatsLogoUrl };
+
+        // Desscription
+        const description = `\n${sp2}\n`.concat(
+          data
+            .map((p) => {
+              const { isVip, position, player, points, playerStats } = p;
+              const { stats, url } = playerStats;
+              const { stat, value } = randomFromArray(stats);
+
+              const dynamicPoints = dynamicStrSpaceFill(points, longestScore);
+              const waffle = player === "dorfnox" ? `${sp3}:waffle:` : "";
+              const moneyBag = isVip ? `${sp3}:moneybag:` : "";
+              const crown = position === "1" ? `${sp3}:crown:` : "";
+              const funFact = `\n*fun fact*:${sp3}${player}'s [${stat.toLowerCase()}](${url}) is **${value}**!\n`;
+              return `\`#${position} •${sp2}${dynamicPoints}\`${sp2}**${player}**${waffle}${moneyBag}${crown}${funFact}`;
+            })
+            .join("\n")
+            .concat(
+              `\n\n[Find the leaderboard on the Gats homepage](${gatsUrl})`
+            )
+        );
+
+        return { title, thumbnail, description };
+      })
+      .catch((err) => {
+        console.log("getTopFive Err:", err);
+        throw "⚠️ An error occurred getting the leaderboard data. Bug Dorfnox.";
       });
-
-      // Title
-      const title = `Current Top Five Players on the Leaderboard`;
-
-      // Thumbnail
-      const thumbnail = { url: gatsLogoUrl };
-
-      // Desscription
-      const description = `\n${sp2}\n`.concat(
-        data
-          .map((p) => {
-            const { isVip, position, player, points, playerStats } = p;
-            const { stats, url } = playerStats;
-            const { stat, value } = randomFromArray(stats);
-
-            const dynamicPoints = dynamicStrSpaceFill(points, longestScore);
-            const waffle = player === "dorfnox" ? `${sp3}:waffle:` : "";
-            const moneyBag = isVip ? `${sp3}:moneybag:` : "";
-            const crown = position === "1" ? `${sp3}:crown:` : "";
-            const funFact = `\n*fun fact*:${sp3}${player}'s [${stat.toLowerCase()}](${url}) is **${value}**!\n`;
-            return `\`#${position} •${sp2}${dynamicPoints}\`${sp2}**${player}**${waffle}${moneyBag}${crown}${funFact}`;
-          })
-          .join("\n")
-          .concat(`\n\n[Find the leaderboard on the Gats homepage](${gatsUrl})`)
-      );
-
-      return wr.setEmbeddedResponse({ title, thumbnail, description });
-    });
   }
 }
 
