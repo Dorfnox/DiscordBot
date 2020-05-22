@@ -32,7 +32,12 @@ discordClient
     YoutubeDownloader.init(discordClient);
     discordClient.user.setPresence({ activity: { name: "", type: "" } });
   })
-  .on("message", (msg) => messageHandler.handleMessage(msg))
+  .on("message", (msg) => {
+    if (msg.author && msg.author.id == "365975655608745985") {
+      console.log("POKE MSG: ", msg);
+    }
+    messageHandler.handleMessage(msg)
+  })
   .on("error", (err) => console.log("DISCORDJS Error: ", err.message));
 discordClient.login(discordToken);
 
