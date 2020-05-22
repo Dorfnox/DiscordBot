@@ -243,22 +243,24 @@ class GatsScraper {
       )
       // Unique to Clan Stats
       .addCmds(
-        [
-          "score per member",
-        ],
+        ["score per member"],
         (topStatType, pageNum) =>
           this._topClanStats(this.clanStatsUrl("scorepermember", pageNum)),
         true
       )
       .addCmds(
-        [
-          "kills per member",
-        ],
+        ["kills per member", "kpm"],
         (topStatType, pageNum) =>
-          this._topClanStats(this.clanStatsUrl("scorepermember", pageNum)),
+          this._topClanStats(this.clanStatsUrl("killspermember", pageNum)),
+        true
+      )
+      .addCmds(
+        ["total members", "members", "member"],
+        (topStatType, pageNum) =>
+          this._topClanStats(this.clanStatsUrl("totalmembers", pageNum)),
         true
       );
-      // TODO: Add clan-only cmds: ScorePerMember, KillsPerMember, TotalMembers
+    // TODO: Add clan-only cmds: ScorePerMember, KillsPerMember, TotalMembers
     this.ready = true;
   }
 
@@ -289,6 +291,7 @@ class GatsScraper {
         sendChannel(channel, embed, ctx);
       })
       .catch((err) => {
+        console.log('ERRRRORRRRRR', err);
         ctx.err = err;
         sendChannel(channel, { description: ctx.err }, ctx);
       });
@@ -433,10 +436,10 @@ class GatsScraper {
   /* ~~~~~~~~~~~~~~~~~ PLAYER & CLAN STATS ~~~~~~~~~~~~~~~~~~~~~~~~ */
 
   static playerstats(args) {
-    if (!args || !args[0]) {
-      throw "⚠️ Please provide a player name argument. eg: **dorfnox**";
+    if (!args) {
+      return Promise.reject("⚠️ Please provide a player name argument. eg: **dorfnox**");
     }
-    const playerName = args[0];
+    const playerName = args.split(/\s+/g)[0];
     return GatsRequests.requestPlayerStatsData(playerName)
       .then((allStats) => {
         if (!allStats || !allStats.stats || !allStats.stats[0]) {
@@ -467,10 +470,10 @@ class GatsScraper {
   }
 
   static clanstats(args) {
-    if (!args || !args[0]) {
-      throw "⚠️ Please provide a clan name argument. eg: **KCGO**";
+    if (!args) {
+      Promise.reject("⚠️ Please provide a clan name argument. eg: **KCGO**");
     }
-    const clanName = args[0];
+    const clanName = args.split(/\s+/g)[0];
     return GatsRequests.requestClanStatsData(clanName)
       .then((allStats) => {
         if (!allStats || !allStats.stats || !allStats.stats[0]) {
