@@ -18,7 +18,7 @@ class Pokemon {
       .then((allPokemon) => {
         this.allPokemon = allPokemon;
         this.ready = true;
-        console.log("✅ Pokechord is ready.");
+        console.log("✅ Pokemon is ready.");
       })
       .catch((err) => {
         console.log("🚫 Pokemon is not ready:", err);
@@ -46,13 +46,6 @@ class Pokemon {
 
     // Execute high-level argument function
     parseRes.value(msg);
-    // .then((embed) => {
-    //   sendChannel(channel, embed, ctx);
-    // })
-    // .catch((err) => {
-    //   ctx.err = err;
-    //   sendChannel(channel, { description: ctx.err }, ctx);
-    // });
   }
 
   static processNextPokeBotMessage(msg) {
@@ -71,7 +64,7 @@ class Pokemon {
     this.channelSet.add(channelId);
     sendChannel(
       channel,
-      { description: "🔥 Listening to Pokéchord for 15 seconds 💧" },
+      { description: "🔥 Listening to Pokécord for 15 seconds 💧" },
       ctx
     );
 
@@ -124,9 +117,6 @@ class Pokemon {
     messages
       .fetch({ limit: 10, before: msgId })
       .then((msgs) => {
-        // return this._reverseImageSearch(
-        //   "https://cdn.discordapp.com/attachments/684985787221016599/713446444329205810/PokecordSpawn.jpg"
-        // );
         // Initial msg validation
         if (!msgs || msgs.length < 10) {
           ctx.err =
@@ -134,7 +124,7 @@ class Pokemon {
           return sendChannel(channel, { description: ctx.err }, ctx);
         }
 
-        // Filter out all pokechord messages
+        // Filter out all Pokécord messages
         const pokeFilter = (m) =>
           m.author &&
           m.author.bot &&
@@ -145,14 +135,14 @@ class Pokemon {
           m.embeds[0].description.startsWith("Guess the pokémon");
         const pokeMessages = [...msgs.filter(pokeFilter).values()];
 
-        // If no PokeChord messages are found
+        // If no Pokécord messages are found
         if (!pokeMessages.length) {
           ctx.err =
             "⚠️ No Pokemon Found 🔎 Pokéchord messages must be at most **10** messages back";
           return sendChannel(channel, { description: ctx.err }, ctx);
         }
 
-        // Get latest pokechord message's image url
+        // Get latest Pokécord message's image url
         const { url } = pokeMessages.reduce(
           (lastMsg, currMsg) =>
             lastMsg.createdTimestamp > currMsg.createdTimestamp
@@ -165,11 +155,17 @@ class Pokemon {
         return this._reverseImageSearch(url).then((searchResults) => {
           const title = "🌿 💧 🔥 Potential Pokes 🔥 💧 🌿";
 
-          // First collect bulbapedia results
+          // First collect bulbapedia & fandom results
           const bulbapediaFilter = (sr) =>
             sr.url.startsWith("https://bulbapedia.bulbagarden.net/wiki/");
+          const fandomFilter = (sr) =>
+            sr.url.startsWith("https://pokemon.fandom.com/wiki/") ||
+            sr.url.startsWith("https://nintendo.fandom.com/wiki/");
           const bulbapediaResults = searchResults.filter(bulbapediaFilter);
-          if (!bulbapediaResults.length) {
+          const fandomResults = searchResults.filter(fandomFilter);
+
+          // If no results, instead exit early and provide links to potential results
+          if (!(bulbapediaResults.length + fandomResults.length)) {
             ctx.err = "Couldn't find concrete results";
             const description = `${ctx.err}. Try the following links:\n\n>>> `.concat(
               searchResults.map((sr) => `[${sr.name}](${sr.url})`).join("\n\n")
@@ -177,23 +173,24 @@ class Pokemon {
             return sendChannel(channel, { title, description }, ctx);
           }
 
-          // Add each bulbapedia result to a Map of PokeName -> Count of Occurrences
+          // Add each bulbapedia & fandom result to a Map of PokeName -> Count of Occurrences
           const pokeNameMap = new Map();
-          bulbapediaResults.forEach((br) => {
-            br.name = br.name.split(" (Pokémon)")[0].toLowerCase();
-            const pokemonNameOccurences = pokeNameMap.get(br.name) || 0;
-            pokeNameMap.set(br.name, pokemonNameOccurences + 1);
-          });
+          const splitter = (r, splitArg) => {
+            r.name = r.name.split(splitArg)[0].toLowerCase();
+            pokeNameMap.set(r.name, (pokeNameMap.get(r.name) || 0) + 1);
+          };
+          bulbapediaResults.forEach((br) => splitter(br, " (Pokémon)"));
+          fandomResults.forEach((fr) => splitter(fr, " | "));
 
-          // For each of the non-bulbapedia results, check for occurrences of names in
+          // For each of the regular results, check for occurrences of names in them
           const pokeNames = [...pokeNameMap.keys()];
           searchResults
-            .filter((sr) => !bulbapediaFilter(sr))
-            .forEach((nonBulbRes) => {
+            .filter((sr) => !(bulbapediaFilter(sr) || fandomFilter(sr)))
+            .forEach((regularResult) => {
               // Check the url, text, and description for occurrences of any pokeName
-              const url = nonBulbRes.url.toLowerCase();
-              const text = nonBulbRes.name.toLowerCase();
-              const description = nonBulbRes.description.toLowerCase();
+              const url = regularResult.url.toLowerCase();
+              const text = regularResult.name.toLowerCase();
+              const description = regularResult.description.toLowerCase();
               pokeNames.forEach((pn) => {
                 const occCount =
                   occurrences(url, pn, false) +
@@ -208,14 +205,26 @@ class Pokemon {
             (a, b) => a + b,
             0
           );
-          const description = bulbapediaResults
-            .map((br) => {
+          const existingNameSet = new Set();
+          const description = [...bulbapediaResults, ...fandomResults]
+            .filter((res) =>
+              existingNameSet.has(res.name)
+                ? false
+                : existingNameSet.add(res.name)
+            )
+            .map((res) => {
               const percentage = roundToTwo(
-                Math.round(pokeNameMap.get(br.name) / totalCount) * 100
+                (pokeNameMap.get(res.name) / totalCount) * 100
               );
-              return `\`${percentage}% Certainty\` **[${br.name}](${br.url})**`;
+              const { name, url } = res;
+              return { percentage, name, url };
             })
-            .join("\n\n");
+            .sort((a, b) => b.percentage - a.percentage)
+            .map(
+              (res) =>
+                `\n\`${res.percentage}% Certainty\` **[${res.name}](${res.url})**`
+            )
+            .join("\n");
           return sendChannel(channel, { title, description }, ctx);
         });
       })
@@ -255,23 +264,31 @@ class Pokemon {
 
   static _reverseImageSearch(url) {
     url = encodeURIComponent(url);
-    const searchUrl = `https://www.google.com/searchbyimage?image_url=${url}`;
-    return Nightmare({ show: false, gotoTimeout: 15000, waitTimeout: 15000 })
-      .goto(searchUrl)
-      .wait("#rso > div.g > div.rc")
-      .evaluate(() => {
-        const searchResults = document.querySelectorAll(
-          "#rso > div.g > div.rc"
-        );
-        return Array.from(searchResults).map((searchResult) => {
-          const aElem = searchResult.children[0].children[0];
-          const url = aElem.href;
-          const name = aElem.children[1].textContent;
-          const description = searchResult.children[1].textContent;
-          return { url, name, description };
-        });
-      })
-      .end()
+    const searchUrl = (pageStart) =>
+      `https://www.google.com/searchbyimage?image_url=${url}&start=${pageStart}`;
+    const nightmareSearch = (searchUrl) =>
+      Nightmare({ show: false, gotoTimeout: 15000, waitTimeout: 15000 })
+        .goto(searchUrl)
+        .wait("#rso > div.g > div.rc")
+        .evaluate(() => {
+          const searchResults = document.querySelectorAll(
+            "#rso > div.g > div.rc"
+          );
+          return Array.from(searchResults).map((searchResult) => {
+            const aElem = searchResult.children[0].children[0];
+            const url = aElem.href;
+            const name = aElem.children[1].textContent;
+            const description = searchResult.children[1].textContent;
+            return { url, name, description };
+          });
+        })
+        .end();
+
+    return Promise.all([
+      nightmareSearch(searchUrl(0)),
+      nightmareSearch(searchUrl(10)),
+    ])
+      .then(([resOne, resTwo]) => [...resOne, ...resTwo])
       .catch((err) => {
         console.log("_reverseImageSearch Err:", err);
         throw "⚠️ An error occurred performing search for poke.";
