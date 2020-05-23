@@ -4,6 +4,7 @@ const WaffleResponse = require("../message/WaffleResponse");
 const ArgumentHandler = require("../message/ArgumentHandler");
 const { QueueItem, QueueContract } = require("./MusicQueue");
 const {
+  getNumberFromArguments,
   getSafe,
   isStaff,
   randomMusicEmoji,
@@ -20,6 +21,7 @@ class WaffleMusic {
     this.serverQueue = new Map();
     this.musicArgMap = new ArgumentHandler()
       .addCmdsForCategory("Music", "Join", (msg, args) => this.join(msg, args))
+      .addCmdsForCategory("Music", "Loop", (msg, args) => this.loop(msg, args))
       .addCmdsForCategory("Music", "Leave", (msg) => this.leave(msg))
       .addCmdsForCategory("Music", "Play", (msg, args) => this.play(msg, args))
       .addCmdsForCategory("Music", "Queue", (msg) => this.queue(msg))
@@ -28,6 +30,7 @@ class WaffleMusic {
       .addCmdsForCategory("Music", "Song", (msg) => this.song(msg))
       .addCmdsForCategory("Music", "Oops", (msg) => this.oops(msg))
       .addCmdsForCategory("Music", "Pause", (msg) => this.pause(msg))
+      .addCmdsForCategory("Music", "UnLoop", (msg) => this.unloop(msg))
       .addCmdsForCategory("Music", "Unpause", (msg) => this.unpause(msg));
     this.ready = true;
     console.log("✅ WaffleMusic is ready.");
@@ -115,6 +118,42 @@ class WaffleMusic {
         console.log("JOIN err: ", err);
         throw `⚠️ ~ Failed to connect to channel **${voiceChannel.name}**. Please try again. If the failure to connect persists, ensure the bot has **voice channel permissions**.`;
       });
+  }
+
+  static loop(msg, args) {
+    const { guild, member, channel: textChannel } = msg;
+    const uivc = this._verifyUserIsInVoiceChannel(member);
+    if (uivc.err) {
+      return Promise.resolve(uivc.message);
+    }
+    const { id: guildId } = guild;
+    const qc = this._getQueueContract(guildId);
+    if (!qc) {
+      return Promise.resolve(":person_shrugging: There are no songs to loop");
+    } else if (qc.isLooping) {
+      return Promise.resolve(":repeat: Music is **already** looping");
+    }
+    // TODO: Change if we end up adding loop count
+    const loopCount = getNumberFromArguments(args) || 0;
+    qc.toggleLoop();
+    return Promise.resolve(`:repeat: Music loop is **enabled**`);
+  }
+
+  static unloop(msg, args) {
+    const { guild, member, channel: textChannel } = msg;
+    const uivc = this._verifyUserIsInVoiceChannel(member);
+    if (uivc.err) {
+      return Promise.resolve(uivc.message);
+    }
+    const { id: guildId } = guild;
+    const qc = this._getQueueContract(guildId);
+    if (!qc) {
+      return Promise.resolve(":person_shrugging: There are no songs to unloop");
+    } else if (!qc.isLooping) {
+      return Promise.resolve(":repeat: Music is **already** not looping");
+    }
+    qc.toggleLoop();
+    return Promise.resolve(`:repeat: Music loop is **disabled**`);
   }
 
   static leave(msg) {
@@ -240,15 +279,10 @@ class WaffleMusic {
     readableStream.on("error", (err) => {
       console.log("READABLE_STREAM_ERR: ", err);
     });
-    readableStream.on("debug", (d) => {
-      console.log("READABLE_STREAM_DEBUG: ", d);
-    });
-    readableStream.on("end", (e) => {
-      console.log("READABLE_STREAM_END: ", e);
-    });
-    readableStream.on("close", (c) => {
-      console.log("READABLE_STREAM_CLOSE: ", c);
-    });
+    // End is usually called before streaming actually finishes
+    // readableStream.on("end", (e) => {
+    //   console.log("READABLE_STREAM_END: ", e);
+    // });
 
     try {
       connection
@@ -290,20 +324,29 @@ class WaffleMusic {
     if (!qc) {
       return;
     }
-    const { musicQueue } = qc;
+    const { musicQueue, isLooping, userEndedCurrentSong, voiceChannel } = qc;
     this.discordClient.user.setPresence({
       activity: { name: "", type: "" },
     });
-    musicQueue.dequeue();
-    if (musicQueue.isEmpty()) {
-      // Clean the voice connection after 2 minutes
-      qc.selfDestructTimeout = setTimeout(
-        () => this._leave(guildId).catch((err) => console.log(err)),
-        120000
-      );
-    } else {
-      this._playQueue(guildId);
-    }
+    const queueItem = musicQueue.dequeue();
+    const addIfLooping = () =>
+      isLooping &&
+      !userEndedCurrentSong &&
+      voiceChannel.members.some((m) => !m.user.bot)
+        ? musicQueue.queue(queueItem)
+        : Promise.resolve();
+    qc.userEndedCurrentSong = false;
+    addIfLooping().then(() => {
+      if (musicQueue.isEmpty()) {
+        // Clean the voice connection after 2 minutes
+        qc.selfDestructTimeout = setTimeout(
+          () => this._leave(guildId).catch((err) => console.log(err)),
+          120000
+        );
+      } else {
+        this._playQueue(guildId);
+      }
+    });
   }
 
   static queue(msg) {
@@ -336,7 +379,7 @@ class WaffleMusic {
     // Verify there is a song at given queue position
     if (queuePosition > qc.musicQueue.length() - 1) {
       return Promise.resolve(
-        `🚫 No songs in queue position **#${queuePosition}**`
+        `⚠️ No songs in queue position **#${queuePosition}**`
       );
     }
 
@@ -568,9 +611,9 @@ class WaffleMusic {
   }
 
   static _buildEmbeddedQueueMessage(guildId, includeFields = true) {
-    const { musicQueue, isPaused } = this._getQueueContract(guildId);
+    const { musicQueue, isPaused, isLooping } = this._getQueueContract(guildId);
     const { videoTitle, videoId, guildMemberDisplayName } = musicQueue.peek();
-    const playState = isPaused ? "Paused" : "Now Playing";
+    const playState = isPaused ? "Paused" : `Now Playing ${isLooping ? "🔁" : ""}`;
     let fields = [];
     if (includeFields) {
       fields = musicQueue

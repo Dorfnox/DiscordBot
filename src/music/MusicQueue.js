@@ -8,12 +8,20 @@ class QueueContract {
     this.musicQueue = new MusicQueue();
     this.isPaused = false;
     this.selfDestructTimeout = null;
+    this.userEndedCurrentSong = false;
+    this.isLooping = false;
+    this.loopCount = 0;
   }
 
   endCurrentSong() {
     if (this.connection.dispatcher) {
+      this.userEndedCurrentSong = true;
       this.connection.dispatcher.end();
     }
+  }
+
+  toggleLoop(value = null) {
+    this.isLooping = value !== null ? value : !this.isLooping;
   }
 }
 
