@@ -27,9 +27,6 @@ class GenericResponse {
       .addCmdsForCategory("General", "Ping", (msg) => this.ping(msg))
       .addCmdsForCategory("General", "Salt", () => this.salt())
       .addCmdsForCategory("General", "Say", (msg, args) => this.say(msg, args))
-      .addCmdsForCategory("General", "Servers", (msg, args) =>
-        this.servers(msg, args)
-      )
       .addCmdsForCategory("General", "SuperSay", (msg, args) =>
         this.superSay(msg, args)
       )
@@ -185,26 +182,6 @@ class GenericResponse {
       description = "😜 Sorry, I'm not saying that... I don’t speak bullshit.";
     }
     return Promise.resolve({ description });
-  }
-
-  static servers(msg, args) {
-    const guildNames = this.discordClient.guilds.cache
-      .array()
-      .map((g) => g.name);
-    const pageSize = 25;
-    const pageCount = Math.ceil(guildNames.length / pageSize);
-    const pageArg = Math.min(
-      getNumberFromArguments(ArgumentHandler.removeArgs(args, 1)) || 1,
-      pageCount
-    );
-    const sp = ` ${zeroWidthSpaceChar} `;
-
-    const title = "Servers WaffleBot is in";
-    const description = paginateArray(guildNames, pageArg, pageSize).join("\n");
-    const footer = {
-      text: `📘 Page ${pageArg} of ${pageCount} ${sp} | ${sp} w servers pageNumber`,
-    };
-    return Promise.resolve({ title, description, footer });
   }
 
   static superSay(msg, description) {

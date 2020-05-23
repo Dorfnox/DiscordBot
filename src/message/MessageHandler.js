@@ -36,7 +36,7 @@ class MessageHandler {
         WaffleMusic.messageConsumer(msg, args)
       )
       .addCmdsForCategory("Owner", null, (msg, args) =>
-        OwnerCommands.setStatus(msg, args)
+        OwnerCommands.messageConsumer(msg, args)
       )
       .addCmdsForCategory("Pokemon", null, (msg, args) =>
         Pokemon.messageConsumer(msg, args)

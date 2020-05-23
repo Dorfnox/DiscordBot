@@ -169,14 +169,6 @@
             "appendHelpExamples": ["Hi", "Bye"]
           },
           {
-            "name": "Servers",
-            "description": "Check out which servers WaffleBot is in.",
-            "cmds": ["servers"],
-            "concatenatable": true,
-            "hideFromHelp": false,
-            "appendHelpExamples": ["3", "7"]
-          },
-          {
             "name": "SuperSay",
             "description": "Look at me! I am the captain now.",
             "cmds": ["super say", "ssay", "ss"],
@@ -287,6 +279,14 @@
         "description": "A list of commands only the owner of the bot can use. Right now, just Dorfnox.",
         "cmdSubCategory": [
           {
+            "name": "Servers",
+            "description": "Check out which servers WaffleBot is in.",
+            "cmds": ["servers", "server list"],
+            "concatenatable": true,
+            "hideFromHelp": false,
+            "appendHelpExamples": ["3", "7"]
+          },
+          {
             "name": "SetStatus",
             "description": "Sets the status of the bot globally.",
             "cmds": ["set status", "status"],
@@ -298,12 +298,20 @@
       },
       {
         "category": "Pokemon",
-        "description": "Interacts with PokeChord.",
+        "description": "Interacts with Pokécord.",
         "cmdSubCategory": [
           {
             "name": "P!Hint",
             "description": "Run 'w p!hint' before running 'p!hint' for a little ***more*** help.",
             "cmds": ["p!hint", "p hint"],
+            "concatenatable": true,
+            "hideFromHelp": false,
+            "appendHelpExamples": []
+          },
+          {
+            "name": "WhoDatPokemon",
+            "description": "If a pokemon has just spawned, use this command to figure out it's name.",
+            "cmds": ["who dat pokemon", "pokemon?", "poke?", "p?"],
             "concatenatable": true,
             "hideFromHelp": false,
             "appendHelpExamples": []

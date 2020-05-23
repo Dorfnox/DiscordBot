@@ -1,37 +1,86 @@
 const ArgumentHandler = require("../message/ArgumentHandler");
-const { isOwner, sendChannel } = require("../util/WaffleUtil");
+const {
+  getNumberFromArguments,
+  isOwner,
+  paginateArray,
+  sendChannel,
+  zeroWidthSpaceChar: z,
+} = require("../util/WaffleUtil");
 
 class OwnerCommands {
   static init(discordClient) {
     this.discordClient = discordClient;
-    this.ownerArgs = new ArgumentHandler().addCmdsForCategory(
-      "Owner",
-      null,
-      (msg, args) => this.setStatus(msg, args)
-    );
+    this.ownerArgs = new ArgumentHandler()
+      .addCmdsForCategory("Owner", "SetStatus", (args) =>
+        this.setStatus(args)
+      )
+      .addCmdsForCategory("Owner", "Servers", (args) =>
+        this.servers(args)
+      );
     this.ready = true;
     console.log("✅ OwnerCommands is ready.");
   }
 
-  static setStatus(msg, args) {
-    if (!this.ready || !isOwner(msg.member)) {
+  static messageConsumer(msg, args) {
+    // Initialize context
+    const { guild, channel, member, content } = msg;
+    const { name: guildName } = guild;
+    const { username } = msg.author;
+    const ctx = { guildName, username, content, err: null };
+
+    // Validate executeability
+    if (!this.ready) {
+      ctx.err = `Feature is down at the moment`;
+      return sendChannel(channel, { description: ctx.err }, ctx);
+    } else if (!isOwner(member)) {
+      ctx.err = `🚫 Only the bot's owner has access to this command`;
+      return sendChannel(channel, { description: ctx.err }, ctx);
+    }
+
+    // Parse out arguments
+    const parseRes = this.ownerArgs.parseArguments(args);
+    if (!parseRes.exists) {
       return;
     }
-    const parseResult = this.ownerArgs.parseArguments(args);
-    if (!parseResult.exists) {
-      return;
-    }
-    const status = ArgumentHandler.removeArgs(args, parseResult.parseLength);
+    parseRes
+      .value(ArgumentHandler.removeArgs(args, parseRes.parseLength))
+      .then((embed) => sendChannel(channel, embed, ctx))
+      .catch((err) => {
+        ctx.err = err;
+        sendChannel(channel, embed, ctx);
+      });
+  }
+
+  static setStatus(status) {
     this.discordClient.user
       .setPresence({
         activity: { name: status, type: "PLAYING" },
       })
-      .catch(console.log);
-    const { channel, guild, author, content } = msg;
-    const { name: guildName } = guild;
-    const { username } = author;
-    const description = `**New Actvity Status**\n(>^_^)> \`${status}\``;
-    sendChannel(channel, { description }, { guildName, username, content });
+      .catch((err) => {
+        console.log("setPresence err:", err);
+      });
+    const description = `**New Actvity Status**\n(>^_^)> \`${z}${status}\``;
+    return Promise.resolve({ description });
+  }
+
+  static servers(args) {
+    const guildNames = this.discordClient.guilds.cache
+      .array()
+      .map((g) => g.name);
+    const pageSize = 25;
+    const pageCount = Math.ceil(guildNames.length / pageSize);
+    const pageArg = Math.min(
+      getNumberFromArguments(ArgumentHandler.removeArgs(args, 1)) || 1,
+      pageCount
+    );
+    const sp = ` ${zeroWidthSpaceChar} `;
+
+    const title = "Servers WaffleBot is in";
+    const description = paginateArray(guildNames, pageArg, pageSize).join("\n");
+    const footer = {
+      text: `📘 Page ${pageArg} of ${pageCount} ${sp} | ${sp} w servers pageNumber`,
+    };
+    return Promise.resolve({ title, description, footer });
   }
 }
 
