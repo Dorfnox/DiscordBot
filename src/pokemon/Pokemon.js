@@ -155,17 +155,51 @@ class Pokemon {
         return this._reverseImageSearch(url).then((searchResults) => {
           const title = "🌿 💧 🔥 Potential Pokes 🔥 💧 🌿";
 
-          // First collect bulbapedia & fandom results
-          const bulbapediaFilter = (sr) =>
-            sr.url.startsWith("https://bulbapedia.bulbagarden.net/wiki/");
-          const fandomFilter = (sr) =>
-            sr.url.startsWith("https://pokemon.fandom.com/wiki/") ||
-            sr.url.startsWith("https://nintendo.fandom.com/wiki/");
-          const bulbapediaResults = searchResults.filter(bulbapediaFilter);
-          const fandomResults = searchResults.filter(fandomFilter);
+          // First collect results that contain potential names in their links.
+          const linksContainingPotentialName = [
+            "https://bulbapedia.bulbagarden.net/wiki/",
+            "https://pokemon.fandom.com/wiki/",
+            "https://nintendo.fandom.com/wiki/",
+            "https://pokemontowerdefensetwo.fandom.com/wiki/",
+            "https://www.pokemon.com/us/pokedex/",
+            "https://www.serebii.net/pokedex-sm/",
+          ];
+          const typesToIgnore = [
+            "normal ",
+            "fire ",
+            "fighting ",
+            "water ",
+            "flying ",
+            "grass ",
+            "poison ",
+            "electric ",
+            "ground ",
+            "psychic ",
+            "rock ",
+            "ice ",
+            "bug ",
+            "dragon ",
+            "ghost ",
+            "dark ",
+            "steel ",
+            "fairy ",
+            "??? ",
+            "generation "
+          ];
+          const nameContainsType = (name) =>
+            typesToIgnore.some((tti) => name.startsWith(tti));
+          const linkNameFilter = (sr) =>
+            linksContainingPotentialName.some(
+              (lcpn) =>
+                sr.url.startsWith(lcpn) &&
+                !nameContainsType(sr.name.toLowerCase())
+            );
+          const resultsContainingPotentialName = searchResults.filter(
+            linkNameFilter
+          );
 
           // If no results, instead exit early and provide links to potential results
-          if (!(bulbapediaResults.length + fandomResults.length)) {
+          if (!resultsContainingPotentialName.length) {
             ctx.err = "Couldn't find concrete results";
             const description = `${ctx.err}. Try the following links:\n\n>>> `.concat(
               searchResults.map((sr) => `[${sr.name}](${sr.url})`).join("\n\n")
@@ -173,21 +207,20 @@ class Pokemon {
             return sendChannel(channel, { title, description }, ctx);
           }
 
-          // Add each bulbapedia & fandom result to a Map of PokeName -> Count of Occurrences
+          // Add each name-result to a Map of PokeName -> Count of Occurrences
           const pokeNameMap = new Map();
-          const splitter = (r, splitArg) => {
-            r.name = r.name.split(splitArg)[0].toLowerCase();
-            pokeNameMap.set(r.name, (pokeNameMap.get(r.name) || 0) + 1);
-          };
-          bulbapediaResults.forEach((br) => splitter(br, " (Pokémon)"));
-          fandomResults.forEach((fr) => splitter(fr, " | "));
+          resultsContainingPotentialName.forEach((rcpn) => {
+            rcpn.name = rcpn.name.split(/ (\| |- #|\(P)/)[0].toLowerCase();
+            pokeNameMap.set(rcpn.name, (pokeNameMap.get(rcpn.name) || 0) + 1);
+          });
 
           // For each of the regular results, check for occurrences of names in them
           const pokeNames = [...pokeNameMap.keys()];
           searchResults
-            .filter((sr) => !(bulbapediaFilter(sr) || fandomFilter(sr)))
+            // Collect regular results
+            .filter((sr) => !linkNameFilter(sr))
+            // Check the url, text, and description for occurrences of any pokeName
             .forEach((regularResult) => {
-              // Check the url, text, and description for occurrences of any pokeName
               const url = regularResult.url.toLowerCase();
               const text = regularResult.name.toLowerCase();
               const description = regularResult.description.toLowerCase();
@@ -200,18 +233,20 @@ class Pokemon {
               });
             });
 
-          // Calculate % Certainty
+          // Build description
           const totalCount = [...pokeNameMap.values()].reduce(
             (a, b) => a + b,
             0
           );
           const existingNameSet = new Set();
-          const description = [...bulbapediaResults, ...fandomResults]
+          const description = resultsContainingPotentialName
+            // Only use results with unique names in map
             .filter((res) =>
               existingNameSet.has(res.name)
                 ? false
                 : existingNameSet.add(res.name)
             )
+            // Calculate % of occurrences
             .map((res) => {
               const percentage = roundToTwo(
                 (pokeNameMap.get(res.name) / totalCount) * 100
@@ -219,6 +254,7 @@ class Pokemon {
               const { name, url } = res;
               return { percentage, name, url };
             })
+            // Sort by highest % occurrence
             .sort((a, b) => b.percentage - a.percentage)
             .map(
               (res) =>
