@@ -118,39 +118,38 @@ class Pokemon {
       .fetch({ limit: 10, before: msgId })
       .then((msgs) => {
         // Initial msg validation
-        // if (!msgs || msgs.length < 10) {
-        //   ctx.err =
-        //     "⚠️ Have at least 10 messages in your channel before using this feature.";
-        //   return sendChannel(channel, { description: ctx.err }, ctx);
-        // }
+        if (!msgs || msgs.length < 10) {
+          ctx.err =
+            "⚠️ Have at least 10 messages in your channel before using this feature.";
+          return sendChannel(channel, { description: ctx.err }, ctx);
+        }
 
-        // // Filter out all Pokécord messages
-        // const pokeFilter = (m) =>
-        //   m.author &&
-        //   m.author.bot &&
-        //   m.author.id == "365975655608745985" &&
-        //   m.embeds &&
-        //   m.embeds[0] &&
-        //   m.embeds[0].description &&
-        //   m.embeds[0].description.startsWith("Guess the pokémon");
-        // const pokeMessages = [...msgs.filter(pokeFilter).values()];
+        // Filter out all Pokécord messages
+        const pokeFilter = (m) =>
+          m.author &&
+          m.author.bot &&
+          m.author.id == "365975655608745985" &&
+          m.embeds &&
+          m.embeds[0] &&
+          m.embeds[0].description &&
+          m.embeds[0].description.startsWith("Guess the pokémon");
+        const pokeMessages = [...msgs.filter(pokeFilter).values()];
 
-        // // If no Pokécord messages are found
-        // if (!pokeMessages.length) {
-        //   ctx.err =
-        //     "⚠️ No Pokemon Found 🔎 Pokéchord messages must be at most **10** messages back";
-        //   return sendChannel(channel, { description: ctx.err }, ctx);
-        // }
+        // If no Pokécord messages are found
+        if (!pokeMessages.length) {
+          ctx.err =
+            "⚠️ No Pokemon Found 🔎 Pokéchord messages must be at most **10** messages back";
+          return sendChannel(channel, { description: ctx.err }, ctx);
+        }
 
-        // // Get latest Pokécord message's image url
-        // const { url } = pokeMessages.reduce(
-        //   (lastMsg, currMsg) =>
-        //     lastMsg.createdTimestamp > currMsg.createdTimestamp
-        //       ? lastMsg
-        //       : currMsg,
-        //   pokeMessages[0]
-        // ).embeds[0].image;
-        const url = "https://cdn.discordapp.com/attachments/686773925216256013/713897817411682304/PokecordSpawn.jpg"
+        // Get latest Pokécord message's image url
+        const { url } = pokeMessages.reduce(
+          (lastMsg, currMsg) =>
+            lastMsg.createdTimestamp > currMsg.createdTimestamp
+              ? lastMsg
+              : currMsg,
+          pokeMessages[0]
+        ).embeds[0].image;
 
         // Perform google reverse-image search
         return this._reverseImageSearch(url).then((searchResults) => {
