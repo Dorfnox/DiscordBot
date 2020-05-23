@@ -7,12 +7,13 @@ A Discord Bot that scrapes stats.gats.io for stats, plays music, and does other 
 ### Gats Stats!
 
 > Scrapes https://stats.gats.io/ and can return most of it's data! Examples of queries look like:
-> `waffle playerstats dorfnox`
-> `w ps MEADOWVOID`
-> `🧇 clanstats KCSS`
-> `w best snipers`
-> `w top kills`
-> `w top5` < Returns the current top five players on the daily leaderboard (including fun facts!).
+> `waffle playerstats dorfnox`, 
+> `w ps MEADOWVOID`, 
+> `🧇 clanstats KCSS`, 
+> `w best snipers`, 
+> `w top kills`, 
+> `w best clan kills per member`,
+> `w top5` (Daily Leaderboard on Gats.io!).
 
 ### Music!
 > Plays and queues up to 12 songs (currently - more server-configs available in future!)
