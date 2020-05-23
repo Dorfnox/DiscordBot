@@ -11,12 +11,8 @@ class OwnerCommands {
   static init(discordClient) {
     this.discordClient = discordClient;
     this.ownerArgs = new ArgumentHandler()
-      .addCmdsForCategory("Owner", "SetStatus", (args) =>
-        this.setStatus(args)
-      )
-      .addCmdsForCategory("Owner", "Servers", (args) =>
-        this.servers(args)
-      );
+      .addCmdsForCategory("Owner", "SetStatus", (args) => this.setStatus(args))
+      .addCmdsForCategory("Owner", "Servers", (args) => this.servers(args));
     this.ready = true;
     console.log("✅ OwnerCommands is ready.");
   }
@@ -69,10 +65,7 @@ class OwnerCommands {
       .map((g) => g.name);
     const pageSize = 25;
     const pageCount = Math.ceil(guildNames.length / pageSize);
-    const pageArg = Math.min(
-      getNumberFromArguments(ArgumentHandler.removeArgs(args, 1)) || 1,
-      pageCount
-    );
+    const pageArg = Math.min(getNumberFromArguments(args) || 1, pageCount);
     const sp = ` ${zeroWidthSpaceChar} `;
 
     const title = "Servers WaffleBot is in";
