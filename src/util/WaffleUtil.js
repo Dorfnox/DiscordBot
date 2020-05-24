@@ -1,3 +1,4 @@
+const Nightmare = require("nightmare");
 const { owner, chat } = require("../../configWaffleBot");
 const { ownerIds } = owner;
 const { cmdCategory } = chat;
@@ -179,14 +180,69 @@ function retry(fn, retries = 3, timeoutMilliseconds = 0, err = null) {
   );
 }
 
-function roundToTwo(num) {    
-  return +(Math.round(num + "e+2")  + "e-2");
+function reverseImageSearch(imageUrl, numOfResults = 10) {
+  if (numOfResults < 1) {
+    return Promise.resolve([]);
+  }
+  // Build search query
+  imageUrl = encodeURIComponent(imageUrl);
+  const searchUrl = (pageStart) =>
+    `https://www.google.com/searchbyimage?image_url=${imageUrl}&start=${pageStart}`;
+
+  // Define the nightmare search
+  const nightmareSearch = (searchUrl) =>
+    Nightmare({ show: false, gotoTimeout: 15000, waitTimeout: 15000 })
+      .goto(searchUrl)
+      .wait("#rso > div > div > div.r > a > h3")
+      .evaluate(() => {
+        // Parse out search results and return as JSON-serializeable result
+        const searchResults = document.querySelectorAll(
+          "#rso > div.g > div.rc"
+        );
+        return Array.from(searchResults).map((searchResult) => {
+          const aElem = searchResult.children[0].children[0];
+          const url = aElem.href;
+          const name = aElem.children[1].textContent;
+          const description = searchResult.children[1].textContent;
+          return { url, name, description };
+        });
+      })
+      .end();
+
+  // Build promise array
+  const numOfPages = Math.ceil(numOfResults / 10);
+  const nightmarePromiseArray = [];
+  for (let i = 0; i < numOfPages; ++i) {
+    nightmarePromiseArray.push(nightmareSearch(searchUrl(i * 10)));
+  }
+
+  // Return search results
+  return Promise.all(nightmarePromiseArray)
+    .then((resultArray) => resultArray.flat().slice(0, numOfResults))
+    .catch((err) => {
+      console.log("reverseImageSearch Err:", err);
+      throw "⚠️ An error occurred performing a reverse image search";
+    });
 }
 
+function roundToTwo(num) {
+  return +(Math.round(num + "e+2") + "e-2");
+}
+
+/*
+ ** If msgToEdit is provided, it will attempt to edit a given channel msg.
+ ** Otherwise, or if the edit fails, default to sending the message to the channel.
+ */
 function sendChannel(
   channel,
   embed,
-  { guildName = "...", username = "...", content = "", err = null }
+  {
+    guildName = "...",
+    username = "...",
+    content = "",
+    err = null,
+    msgToEdit = null,
+  }
 ) {
   const sendable =
     typeof embed === "string"
@@ -199,15 +255,23 @@ function sendChannel(
             { ...embed }
           ),
         };
+  const sendPromise = () => channel.send(sendable);
+  const editPromise = () =>
+    msgToEdit.edit(sendable).catch((err) => {
+      console.log("sendChannel edit err:", err);
+      // In case an error occurred editing the last message, we will send it instead
+      return sendPromise();
+    });
+  const actionPromise = () => (msgToEdit ? editPromise() : sendPromise());
   // Send to channel
-  return channel
-    .send(sendable)
+  return actionPromise()
     .then((sentMsg) => {
       logger(guildName, channel.name, username, content, err);
       return sentMsg;
     })
     .catch((err) => {
       logger(guildName, channel.name, username, content, err);
+      return null;
     });
 }
 
@@ -253,6 +317,7 @@ module.exports = {
   randomMusicEmoji,
   randomWaffleColor,
   retry,
+  reverseImageSearch,
   roundToTwo,
   sendChannel,
   timeoutPromise,

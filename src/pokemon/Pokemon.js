@@ -1,7 +1,11 @@
 const axios = require("axios").default;
-const Nightmare = require("nightmare");
 const ArgumentHandler = require("../message/ArgumentHandler");
-const { occurrences, roundToTwo, sendChannel } = require("../util/WaffleUtil");
+const {
+  occurrences,
+  reverseImageSearch,
+  roundToTwo,
+  sendChannel,
+} = require("../util/WaffleUtil");
 
 class Pokemon {
   static init(discordClient) {
@@ -112,7 +116,10 @@ class Pokemon {
       channel,
       { description: "🧠 WaffleBot is thinking... this might take a moment" },
       ctx
-    );
+    ).then((waffleIsThinkingMsg) => {
+      // Use the thinking-message as the msg to update.
+      ctx.msgToEdit = waffleIsThinkingMsg;
+    });
 
     messages
       .fetch({ limit: 10, before: msgId })
@@ -152,7 +159,7 @@ class Pokemon {
         ).embeds[0].image;
 
         // Perform google reverse-image search
-        return this._reverseImageSearch(url).then((searchResults) => {
+        return reverseImageSearch(url, 30).then((searchResults) => {
           const title = "🌿 💧 🔥 Potential Pokes 🔥 💧 🌿";
 
           // First collect results that contain potential names in their links.
@@ -184,16 +191,18 @@ class Pokemon {
             "steel ",
             "fairy ",
             "??? ",
-            "generation "
+            "generation ",
           ];
           const nameContainsType = (name) =>
             typesToIgnore.some((tti) => name.startsWith(tti));
-          const linkNameFilter = (sr) =>
-            linksContainingPotentialName.some(
-              (lcpn) =>
-                sr.url.startsWith(lcpn) &&
-                !nameContainsType(sr.name.toLowerCase())
+          const linkNameFilter = (sr) => {
+            let { name, url } = sr;
+            name = name.toLowerCase();
+            return linksContainingPotentialName.some(
+              (lcpn) => url.startsWith(lcpn) && name && !nameContainsType(name)
             );
+          };
+
           const resultsContainingPotentialName = searchResults.filter(
             linkNameFilter
           );
@@ -202,7 +211,7 @@ class Pokemon {
           if (!resultsContainingPotentialName.length) {
             ctx.err = "Couldn't find concrete results";
             const description = `${ctx.err}. Try the following links:\n\n>>> `.concat(
-              searchResults.map((sr) => `[${sr.name}](${sr.url})`).join("\n\n")
+              searchResults.slice(0, 10).map((sr) => `[${sr.name}](${sr.url})`).join("\n\n")
             );
             return sendChannel(channel, { title, description }, ctx);
           }
@@ -210,7 +219,9 @@ class Pokemon {
           // Add each name-result to a Map of PokeName -> Count of Occurrences
           const pokeNameMap = new Map();
           resultsContainingPotentialName.forEach((rcpn) => {
-            rcpn.name = rcpn.name.split(/ (\| |- #|- pok|\(P)/)[0].toLowerCase();
+            rcpn.name = rcpn.name
+              .split(/ (\| |- #|- pok|- Bulb|\(P)/)[0]
+              .toLowerCase();
             pokeNameMap.set(rcpn.name, (pokeNameMap.get(rcpn.name) || 0) + 1);
           });
 
@@ -267,7 +278,7 @@ class Pokemon {
       .catch((err) => {
         console.log("whoDatPokemon Err:", err);
         ctx.err =
-          "⚠️ I may not have permssion to retrieve messages in this channel. Check with staff.";
+          "⚠️ I may not have permssion to send / retrieve messages in this channel. Check with staff.";
         return sendChannel(channel, { description: ctx.err }, ctx);
       });
   }
@@ -296,39 +307,6 @@ class Pokemon {
     return axios
       .get("https://pokeapi.co:443/api/v2/pokemon/?offset=0&limit=10000")
       .then((data) => data.data.results);
-  }
-
-  static _reverseImageSearch(url) {
-    url = encodeURIComponent(url);
-    const searchUrl = (pageStart) =>
-      `https://www.google.com/searchbyimage?image_url=${url}&start=${pageStart}`;
-    const nightmareSearch = (searchUrl) =>
-      Nightmare({ show: false, gotoTimeout: 15000, waitTimeout: 15000 })
-        .goto(searchUrl)
-        .wait("#rso > div > div > div.r > a > h3")
-        .evaluate(() => {
-          const searchResults = document.querySelectorAll(
-            "#rso > div.g > div.rc"
-          );
-          return Array.from(searchResults).map((searchResult) => {
-            const aElem = searchResult.children[0].children[0];
-            const url = aElem.href;
-            const name = aElem.children[1].textContent;
-            const description = searchResult.children[1].textContent;
-            return { url, name, description };
-          });
-        })
-        .end();
-
-    return Promise.all([
-      nightmareSearch(searchUrl(0)),
-      nightmareSearch(searchUrl(10)),
-    ])
-      .then(([resOne, resTwo]) => [...resOne, ...resTwo])
-      .catch((err) => {
-        console.log("_reverseImageSearch Err:", err);
-        throw "⚠️ An error occurred performing search for poke.";
-      });
   }
 }
 
