@@ -153,7 +153,6 @@ class Pokemon {
 
         // Perform google reverse-image search
         return this._reverseImageSearch(url).then((searchResults) => {
-          console.log('SEARCH_RESULTS', searchResults);
           const title = "🌿 💧 🔥 Potential Pokes 🔥 💧 🌿";
 
           // First collect results that contain potential names in their links.
