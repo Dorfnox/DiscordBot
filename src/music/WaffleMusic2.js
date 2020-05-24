@@ -266,7 +266,7 @@ class WaffleMusic {
       clearTimeout(qc.selfDestructTimeout);
       qc.selfDestructTimeout = null;
     }
-    const { musicQueue, connection } = qc;
+    const { musicQueue, connection, nowPlayingMsg } = qc;
     const { info, videoId, videoTitle, textChannel } = musicQueue.peek();
     const ytLink = `https://www.youtube.com/watch?v=${videoId}`;
 
@@ -295,13 +295,25 @@ class WaffleMusic {
               url: ytLink,
             },
           });
-          const embeddedMessage = this._buildEmbeddedQueueMessage(
-            guildId,
-            false
-          );
-          textChannel
-            .send({ embed: embeddedMessage })
-            .catch((err) => console.log(err));
+          const embeddedMessage = {
+            embed: this._buildEmbeddedQueueMessage(guildId, false),
+          };
+          // See if last message in channel is 'Now Playing', and edit that instead.
+          const sendPromise = () =>
+            textChannel
+              .send(embeddedMessage)
+              .then((sentMessage) => {
+                qc.setNowPlayingMsg(sentMessage);
+              })
+              .catch((err) => console.log(err));
+          const editPromise = () =>
+            nowPlayingMsg.edit(embeddedMessage).catch((err) => {
+              console.log("_playQueue | Edit now playing message error:", err);
+              return sendPromise();
+            });
+          textChannel.lastMessageID === nowPlayingMsg.id
+            ? editPromise()
+            : sendPromise();
         })
         .on("finish", () => {
           this._playFinish(guildId);
@@ -613,7 +625,9 @@ class WaffleMusic {
   static _buildEmbeddedQueueMessage(guildId, includeFields = true) {
     const { musicQueue, isPaused, isLooping } = this._getQueueContract(guildId);
     const { videoTitle, videoId, guildMemberDisplayName } = musicQueue.peek();
-    const playState = isPaused ? "Paused" : `Now Playing ${isLooping ? "🔁" : ""}`;
+    const playState = isPaused
+      ? "Paused"
+      : `Now Playing ${isLooping ? "🔁" : ""}`;
     let fields = [];
     if (includeFields) {
       fields = musicQueue
