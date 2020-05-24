@@ -42,7 +42,7 @@ class GatsScraper {
     this.topStatArgs = new ArgumentHandler()
       .addCmds(["score", "scores"], (topStatType, pageNum) =>
         topStatType === this.TopStatType.PLAYER
-          ? this._topPlayerStats(this.playerStatsUrl("score", pageNum))
+          ? this._topPlayerStats(this.playerStatsUrl("highestscore", pageNum))
           : this._topClanStats(this.clanStatsUrl("totalscore", pageNum))
       )
       .addCmds(["kill", "kills", "killer", "killers"], (topStatType, pageNum) =>
@@ -308,7 +308,7 @@ class GatsScraper {
       if (!topStatArg.exists) {
         // Grab optional page number '3', '7'
         const pageNum = getNumberFromArguments(args) || 1;
-        return this._topPlayerStats(this.playerStatsUrl("score", pageNum));
+        return this._topPlayerStats(this.playerStatsUrl("highestscore", pageNum));
       }
       const argsWithoutTopStat = ArgumentHandler.removeArgs(
         args,
@@ -328,7 +328,7 @@ class GatsScraper {
       // Grab optional page number '3', '7'
       const pageNum = getNumberFromArguments(argsAfterClanOrPlayer) || 1;
       if (clanOrPlayerArg.value === this.TopStatType.PLAYER) {
-        return this._topPlayerStats(this.playerStatsUrl("score", pageNum));
+        return this._topPlayerStats(this.playerStatsUrl("highestscore", pageNum));
       }
       return this._topClanStats(this.clanStatsUrl("totalscore", pageNum));
     }

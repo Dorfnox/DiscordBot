@@ -3,8 +3,11 @@ const { getCategoryCmds } = require("../util/WaffleUtil");
 
 class ArgumentHandler {
   static removeArgs(argString, numArgsToRemove) {
+    if (numArgsToRemove < 1) {
+      return argString;
+    }
     return argString
-      .split(/\s/g)
+      .split(/\s+/g)
       .filter((i) => i)
       .slice(numArgsToRemove)
       .join(" ");
