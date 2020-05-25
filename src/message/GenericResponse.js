@@ -16,6 +16,7 @@ class GenericResponse {
   static init(discordClient) {
     this.discordClient = discordClient;
     this.argHandler = new ArgumentHandler()
+      .addCmdsForCategory("General", "Avatar", (msg) => this.avatar(msg))
       .addCmdsForCategory("General", "Drip", () => this.drip())
       .addCmdsForCategory("General", "Feed", () => this.feed())
       .addCmdsForCategory("General", "Help", (msg, args) =>
@@ -72,6 +73,22 @@ class GenericResponse {
         ctx.err = err;
         sendChannel(channel, { description: ctx.err }, ctx);
       });
+  }
+
+  static avatar(msg) {
+    const { mentions } = msg;
+    const embed = {
+      description: "",
+      image: {
+        url: '',
+      }
+    }
+    if (!mentions.users.size) {
+      embed.description = "⚠️ Please mention a member in the server, for example @Dorfnox.";
+    } else {
+      embed.image.url = mentions.users.first().displayAvatarURL({ size: 256 });
+    }
+    return Promise.resolve(embed);
   }
 
   static drip() {
