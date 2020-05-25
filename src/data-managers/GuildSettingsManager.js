@@ -104,17 +104,18 @@ class GuildSettingsManager {
       msg.delete({ timeout: 5000, reason: description }).catch((err) => {
         console.log("Failed to delete: ", err);
       });
+    // If it's a waffleBot message
     if (msg.author.id === this.discordClient.user.id) {
       // Edit waffle message
       const embed =
         msg.embeds && msg.embeds[0]
           ? msg.embeds[0]
           : { description: msg.content };
+      const eDescription = embed.description || "";
       let editPromise = () => Promise.resolve();
-      if (embed.description.substr(0, 6) !== ":boom:") {
-        embed.description = `${
-          embed.description ? embed.description : ""
-        }\n\n${description}\n`;
+      // Avoid editing the ':boom:' message
+      if (eDescription.substr(0, 6) !== ":boom:") {
+        embed.description = `${eDescription}\n\n${description}\n`;
         editPromise = () => msg.edit(embed);
       }
       return editPromise()
