@@ -19,10 +19,8 @@ class GenericResponse {
       .addCmdsForCategory("General", "Avatar", (msg) => this.avatar(msg))
       .addCmdsForCategory("General", "Drip", () => this.drip())
       .addCmdsForCategory("General", "Feed", () => this.feed())
-      .addCmdsForCategory("General", "Help", (msg, args) =>
-        this.help(msg, args)
-      )
-      .addCmdsForCategory("General", "How", () => this.how())
+      .addCmdsForCategory("General", "Help", (msg, args) => this.help(args))
+      .addCmdsForCategory("General", "How", (msg, args) => this.how(args))
       .addCmdsForCategory("General", "Invite", () => this.invite())
       .addCmdsForCategory("General", "Nani", () => this.nani())
       .addCmdsForCategory("General", "Ping", (msg) => this.ping(msg))
@@ -35,8 +33,35 @@ class GenericResponse {
     this.helpArgHandler = new ArgumentHandler().addCmds(
       cmdCategory.map((cc) => cc.category)
     );
+    this.howEnum = {
+      KENDRON: 1,
+      CONTACT: 2,
+      MEADOW: 3,
+      DORFNOX: 4,
+      BFF: 5,
+      DXL: 6,
+      DRIPZ: 7,
+      FEFE: 8,
+    };
+    this.howArgHandler = new ArgumentHandler()
+      .addCmd("old is kendron", this.howEnum.KENDRON, true)
+      .addCmd("old is contact", this.howEnum.CONTACT, true)
+      .addCmds(
+        ["old is meadow", "old is meadowvoid"],
+        this.howEnum.MEADOW,
+        true
+      )
+      .addCmds(["old is dorfnox", "old is dorf"], this.howEnum.DORFNOX, true)
+      .addCmd("old is bff", this.howEnum.BFF, true)
+      .addCmds(["old is dxl", "old is keys"], this.howEnum.DXL, true)
+      .addCmds(
+        ["old is drips", "old is dripz", "old is driipz"],
+        this.howEnum.DRIPZ,
+        true
+      )
+      .addCmd("old is fefe", this.howEnum.FEFE, true);
     this.ready = true;
-    console.log('✅ GenericResponse is ready.');
+    console.log("✅ GenericResponse is ready.");
   }
 
   static messageConsumer(msg, args) {
@@ -80,11 +105,12 @@ class GenericResponse {
     const embed = {
       description: "",
       image: {
-        url: '',
-      }
-    }
+        url: "",
+      },
+    };
     if (!mentions.users.size) {
-      embed.description = "⚠️ Please mention a member in the server, for example @Dorfnox.";
+      embed.description =
+        "⚠️ Please mention a member in the server, for example @Dorfnox.";
     } else {
       embed.image.url = mentions.users.first().displayAvatarURL({ size: 256 });
     }
@@ -101,7 +127,7 @@ class GenericResponse {
     return Promise.resolve({ description });
   }
 
-  static help(msg, helpArg) {
+  static help(helpArg) {
     const parseArg = this.helpArgHandler.parseArguments(helpArg);
     let title, description;
     if (parseArg.exists) {
@@ -132,9 +158,55 @@ class GenericResponse {
     return Promise.resolve({ url, title, description, footer });
   }
 
-  static how() {
-    const description = "Kendron is a baby boi!";
-    return Promise.resolve({ description });
+  static how(howArgs) {
+    console.log(howArgs);
+    return new Promise((resolve, reject) => {
+      const howArg = this.howArgHandler.parseArguments(howArgs);
+      if (howArg.exists) {
+        let description;
+        switch (howArg.value) {
+          case this.howEnum.KENDRON:
+            description = "Kendron is a baby boi!";
+            break;
+          case this.howEnum.CONTACT:
+            description = `Contact is ${randomFromArray([8, 9, 10, 11, 12])}`;
+            break;
+          case this.howEnum.MEADOW:
+            description = `Meadow is a boomer. Also, her real name is **${randomFromArray(
+              [
+                "Megan",
+                "Stacey",
+                "Rose",
+                "Sir Arthur Ignatius Conan Doyle",
+                "Joe",
+                "Charlotte",
+                "your mum, lol",
+              ]
+            )}**.`;
+            break;
+          case this.howEnum.DORFNOX:
+            description = `Dorfnox is a Waffle God. His age is known to no one. It is as timeless as a river of stars, flowing into an eternal abyss. jk he 28 lol.`;
+            break;
+          case this.howEnum.BFF:
+            description = `I dunno, ask him.`;
+            break;
+          case this.howEnum.DXL:
+            description = `⚠️ Sorry - this feature is unavailable as dxl has quit playing gats.`;
+            break;
+          case this.howEnum.DRIPZ:
+            description = `DRIIIIIIIIIPZ`;
+            break;
+          case this.howEnum.FEFE:
+            description = `Fefe is a fully grown adult. *Don't let his lies fool you.*`;
+            break;
+          default:
+            description = "?";
+            break;
+        }
+        resolve({ description });
+      }
+      reject("⚠️ Try 'w how old is Kendron'");
+    });
   }
 
   static invite() {
