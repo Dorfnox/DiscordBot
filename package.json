@@ -13,13 +13,13 @@
     "axios": "^0.19.2",
     "cheerio": "^1.0.0-rc.3",
     "discord.js": "^12.2.0",
-    "electron": "^8.3.0",
+    "electron": "^8.4.1",
     "express": "^4.17.1",
-    "mongodb": "^3.5.7",
+    "mongodb": "^3.5.9",
     "nightmare": "^3.0.2",
-    "node-cache": "^5.1.0",
+    "node-cache": "^5.1.2",
     "node-gyp": "^6.1.0",
     "yt-search": "^1.1.2",
-    "ytdl-core": "^2.1.4"
+    "ytdl-core": "^2.1.7"
   }
 }
