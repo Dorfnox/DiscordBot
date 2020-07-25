@@ -68,6 +68,7 @@ function getCategorySubCmds(categoryObject, subCategory) {
     (csc) => csc.name.toLowerCase() === subCategory
   );
   if (!subCategoryObject) {
+    console.log(categoryObject);
     throw `Missing Sub-category: ${subCategory}`;
   }
   return subCategoryObject;
@@ -167,7 +168,7 @@ function retry(fn, retries = 3, timeoutMilliseconds = 0, err = null) {
     (err) =>
       new Promise((resolve, reject) => {
         if (!--retries) {
-          reject(err);
+          return reject(err);
         }
         const run = () =>
           retry(fn, retries, timeoutMilliseconds, err).then((res) => {
