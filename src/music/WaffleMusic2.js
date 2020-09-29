@@ -218,7 +218,14 @@ class WaffleMusic {
 
     const playExecutor = () =>
       this._getYTInfo(args)
-        .then((info) => this._play(guildId, member, textChannel, info))
+        .then((info) => {
+          if (!info) {
+            return Promise.resolve('⚠️ *unknown error occurred*');
+          } else if (parseInt(info.player_response.videoDetails.lengthSeconds) > 600) {
+            return Promise.resolve('Aint nobody got time fo dat. That song is too damn long!');
+          }
+          return this._play(guildId, member, textChannel, info);
+        })
         .catch((err) => {
           // Catch any getYTInfo errors
           console.log("PLAY err:", err);
@@ -227,9 +234,10 @@ class WaffleMusic {
     // Join a channel if no queue contract exists
     if (!qc) {
       return this._join(guildId, userVoiceChannel).then(() => playExecutor());
+    } else {
+      // Play music
+      return playExecutor();
     }
-    // Play music
-    return playExecutor();
   }
 
   static _play(guildId, guildMember, textChannel, info) {
