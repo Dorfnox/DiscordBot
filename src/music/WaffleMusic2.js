@@ -298,7 +298,7 @@ class WaffleMusic {
         .on("start", () => {
           this.discordClient.user.setPresence({
             activity: {
-              name: `${videoTitle} 🎧`,
+              name: `🎧 Music 🎧`,
               type: "PLAYING",
               url: ytLink,
             },
