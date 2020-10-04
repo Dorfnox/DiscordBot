@@ -5,8 +5,9 @@ git pull
 #source $NVM_DIR/nvm.sh;
 
 #nvm install node
-npm update
-npm install
+nvm install 12.18.4
+#npm update
+#npm install
 if [ -z "$1" ]
 then
 	xvfb-run -a node .
