@@ -562,19 +562,23 @@ class WaffleMusic {
       yts(options)
         .then((res) => getSafe(() => res.videos || [], []))
         .then((videos) => {
-          if (!videos || !videos[0]) {
+          if (!Array.isArray(videos) || !videos[0]) {
+            throw "⚠️ no videos found";
+          }
+          const filteredVideos = videos.filter((video) => {
+            // Ignore Youtube Movies Hardcode
+            return (
+              video.author.id !== "UClgRkhTL3_hImCAmdLfDE4g" &&
+              video.duration.seconds < 601
+            );
+          });
+          if (!filteredVideos.length) {
             throw "⚠️ no videos found";
           }
           return videos;
         });
     return retry(searchFunc, 3, 500)
-      .then((videos) => {
-        const filteredVideos = videos.filter((video) => {
-          // Ignore Youtube Movies Hardcode
-          return video.author.id !== "UClgRkhTL3_hImCAmdLfDE4g";
-        });
-        return this._getYTInfoViaLink(filteredVideos[0].url);
-      })
+      .then((videos) => this._getYTInfoViaLink(videos[0].url))
       .catch((err) => {
         console.log("_getYTInfoViaString err:", err);
         throw `⚠️ Could not find any results for '${argString}'. Try again, or try a different search.`;
