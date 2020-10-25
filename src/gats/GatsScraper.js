@@ -1,5 +1,4 @@
 const GatsRequests = require("./GatsRequests");
-const WaffleResponse = require("../message/WaffleResponse");
 const ArgumentHandler = require("../message/ArgumentHandler");
 const {
   dynamicStrSpaceFill,

@@ -1,16 +1,12 @@
 const ArgumentHandler = require("./ArgumentHandler");
 const {
-  getNumberFromArguments,
   getCategoryCmds,
   logger,
-  paginateArray,
   randomFromArray,
   sendChannel,
-  zeroWidthSpaceChar,
 } = require("../util/WaffleUtil");
-const { invite, chat } = require("../../configWaffleBot");
-const { link: inviteLink, botImgUrl } = invite;
-const { cmdCategory, prefixes } = chat;
+const { link: inviteLink, botImgUrl } = require("../../configWaffleBot").invite;
+const { cmdCategory, prefixes } = require("../../commands");
 
 class GenericResponse {
   static init(discordClient) {

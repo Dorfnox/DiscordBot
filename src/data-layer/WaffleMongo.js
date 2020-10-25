@@ -5,6 +5,7 @@ const {
   mongoDatabaseName,
   mongoDBUsername,
   mongoDBPassword,
+  mongoDBClusterNetAddress
 } = require("../../configWaffleBot.json").mongoDB;
 
 // Wrapper class for performing operations on MongoDB
@@ -18,7 +19,7 @@ class WaffleMongo {
     if (client) {
       return Promise.resolve(client);
     }
-    const mongDBUrl = `mongodb+srv://${mongoDBUsername}:${mongoDBPassword}@dorfnoxcluster-uwoxw.mongodb.net/test?retryWrites=true&w=majority`;
+    const mongDBUrl = `mongodb+srv://${mongoDBUsername}:${mongoDBPassword}@${mongoDBClusterNetAddress}/test?retryWrites=true&w=majority`;
     return MongoClient.connect(mongDBUrl, { useUnifiedTopology: true })
       .then((mongoClient) => WaffleMongo._setClient(mongoClient))
       .catch((err) => {

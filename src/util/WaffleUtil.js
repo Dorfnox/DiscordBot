@@ -1,7 +1,6 @@
 const Nightmare = require("nightmare");
-const { owner, chat } = require("../../configWaffleBot");
-const { ownerIds } = owner;
-const { cmdCategory } = chat;
+const { ownerIds } = require("../../configWaffleBot").owner;
+const { cmdCategory } = require("../../commands");
 
 // For use with Maps in the form: Map<k>:Set<v>
 function addValueToMapSet(map, key, setValue) {

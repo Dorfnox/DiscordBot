@@ -38,7 +38,17 @@ git clone https://github.com/Dorfnox/DiscordBot.git
 
 ### Installing
 
-Will add more details here.
+Steps taken to achieve clean install:
+
+1. Remove nvm file `rm -rf ~/.nvm` and `brew uninstall nvm` (if using brew)
+2. Install nvm `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.36.0/install.sh | bash`
+3. Add to ~/.zshrc (or to your appropriate profile file)
+    ```
+    export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
+    ```
+4. Install latest npm `npm install -g npm@latest`
+
 
 #### configWaffleBot.json
 

@@ -1,7 +1,7 @@
 const Discord = require("discord.js");
 const Pokemon = require("../pokemon/Pokemon");
 const WaffleMail = require("../mail/WaffleMail");
-const WaffleMusic = require("../music/WaffleMusic2");
+const WaffleMusic = require("../music/WaffleMusic");
 const GatsScraper = require("../gats/GatsScraper");
 const OwnerCommands = require("../owner/OwnerCommands");
 const ArgumentHandler = require("./ArgumentHandler");
@@ -15,8 +15,8 @@ const {
   randomFromArray,
   sendChannel,
 } = require("../util/WaffleUtil");
-const { chat, modMail } = require("../../configWaffleBot.json");
-const { prefixes } = chat;
+const { modMail } = require("../../configWaffleBot.json");
+const { prefixes } = require("../../commands");
 const { modMailChannelCategoryName } = modMail;
 
 class MessageHandler {

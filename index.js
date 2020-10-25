@@ -3,7 +3,7 @@ const MessageHandler = require("./src/message/MessageHandler");
 const WaffleMongo = require("./src/data-layer/WaffleMongo");
 const GuildSettingsManager = require("./src/data-managers/GuildSettingsManager");
 const TwitchChannelManager = require("./src/data-managers/TwitchChannelManager");
-const WaffleMusic = require("./src/music/WaffleMusic2");
+const WaffleMusic = require("./src/music/WaffleMusic");
 const GatsScraper = require("./src/gats/GatsScraper");
 const Pokemon = require("./src/pokemon/Pokemon");
 const YoutubeDownloader = require("./src/music/YoutubeDownloader");
@@ -16,6 +16,7 @@ const Express = require("express");
 const { token: discordToken } = init;
 const discordClient = new Discord.Client();
 const messageHandler = new MessageHandler(discordClient);
+
 discordClient
   .on("ready", () => {
     console.log("✅ Bot has logged in.");
@@ -34,6 +35,7 @@ discordClient
   })
   .on("message", (msg) => messageHandler.handleMessage(msg))
   .on("error", (err) => console.log("DISCORDJS Error: ", err.message));
+
 discordClient.login(discordToken);
 
 /* EXPRESS Initialization | Handle incomming webhooks */

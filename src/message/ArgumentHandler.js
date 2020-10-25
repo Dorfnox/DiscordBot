@@ -1,4 +1,4 @@
-const { prefixes } = require("../../configWaffleBot").chat;
+const { prefixes } = require("../../commands");
 const { getCategoryCmds } = require("../util/WaffleUtil");
 
 class ArgumentHandler {
