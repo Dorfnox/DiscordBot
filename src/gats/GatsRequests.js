@@ -7,7 +7,7 @@ const { getSafe } = require("../util/WaffleUtil");
 const {
   topFiveCacheLongevityInSeconds,
 } = require("../../configWaffleBot").gats;
-const { gatsLogoUrl, gatsChangeLogURL } = require("./GatsConstants");
+const { gatsLogoUrl, gatsChangeLogURL, statsUrl } = require("./GatsConstants");
 
 class GatsRequests {
   static gatsCache = {
@@ -112,6 +112,7 @@ class GatsRequests {
       return { title, url, stats };
     });
   }
+
   static requestChangeLog() {
     return this._loadCheerioData(gatsChangeLogURL)
       .then((cdata) => {
@@ -208,36 +209,42 @@ class GatsRequests {
   }
 
   static _requestStatsData(url) {
+    const isPlayer = !url.startsWith(`${statsUrl}clan/`);
     return this._loadCheerioData(url)
       .then((cdata) => {
         const vipSelector = `#pageContainer > h1`;
         const nameSelector = (nthChild) =>
           `#pageContainer > div:nth-child(${nthChild}) > div:nth-child(1) > h1`;
-        const statsSelector = (nthChild) =>
-          `#pageContainer > div:nth-child(${nthChild}) > div:nth-child(1) > table > tbody > tr`;
+        const clanNameSelector = (nthChild) =>
+          `#pageContainer > div:nth-child(${nthChild}) > div:nth-child(1) > h2`;
+        const statsSelector = (nthChild, tableNum = 1) =>
+          `#pageContainer > div:nth-child(${nthChild}) > div:nth-child(${tableNum}) > table > tbody > tr`;
         const favoriteLoadoutsSelector = (nthChild) =>
           `#pageContainer > div:nth-child(${nthChild}) > div:nth-child(2) > div > table > tbody > tr`;
 
         // Collect vip details
-        const vip = getSafe(
-          () => {
-            const vipData = cdata(vipSelector)
-              .text()
-              .trim()
-              .split("\n")
-              .filter((t) => t !== "");
-            let isVip = false;
-            let since = null;
-            if (vipData.length === 2 && vipData[0] === "Premium Member") {
-              isVip = true;
-              since = vipData[1].substring(6);
-            }
-            return { isVip, since };
-          },
-          { isVip: false, since: null }
-        );
+        var vip = null;
+        if (isPlayer) {
+          vip = getSafe(
+            () => {
+              const vipData = cdata(vipSelector)
+                .text()
+                .trim()
+                .split("\n")
+                .filter((t) => t !== "");
+              let isVip = false;
+              let since = null;
+              if (vipData.length === 2 && vipData[0] === "Premium Member") {
+                isVip = true;
+                since = vipData[1].substring(6);
+              }
+              return { isVip, since };
+            },
+            { isVip: false, since: null }
+          );
+        }
 
-        const nthChild = vip.isVip ? 3 : 1;
+        const nthChild = vip && vip.isVip ? 3 : 1;
 
         // Collect proper name
         const name = getSafe(
@@ -245,19 +252,58 @@ class GatsRequests {
           "unknown"
         );
 
-        const stats = cdata(statsSelector(nthChild))
-          .map((_, elem) => {
-            const stat = getSafe(
-              () => elem.children[1].children[0].data.trim(),
-              "no stat"
-            );
-            const value = getSafe(
-              () => elem.children[3].children[0].data.trim(),
-              "no value"
-            );
-            return { stat, value };
-          })
-          .get();
+        // Collect clan name/link
+        var clan = null;
+        if (isPlayer) {
+          clan = getSafe(
+            () => {
+              const clanLoad = cdata(clanNameSelector(nthChild));
+              const name = clanLoad.children().get(0).children[0].data.trim();
+              const link = `${statsUrl}${clanLoad
+                .find("a")
+                .attr("href")
+                .substring(1)}`;
+              return { name, link };
+            },
+            { name: null, link: null }
+          );
+        }
+
+        const statIterator = (_, elem) => {
+          const stat = getSafe(
+            () => elem.children[1].children[0].data.trim(),
+            "no stat"
+          );
+          const value = getSafe(
+            () => elem.children[3].children[0].data.trim(),
+            "no value"
+          );
+          return { stat, value };
+        };
+
+        const stats = cdata(statsSelector(nthChild)).map(statIterator).get();
+
+        const weaponStatNthChild = isPlayer && !vip.isVip ? 4 : 7;
+        const weaponStats = {
+          pistol: cdata(statsSelector(weaponStatNthChild, 1))
+            .map(statIterator)
+            .get(),
+          smg: cdata(statsSelector(weaponStatNthChild, 2))
+            .map(statIterator)
+            .get(),
+          shotgun: cdata(statsSelector(weaponStatNthChild, 3))
+            .map(statIterator)
+            .get(),
+          assault: cdata(statsSelector(weaponStatNthChild, 4))
+            .map(statIterator)
+            .get(),
+          sniper: cdata(statsSelector(weaponStatNthChild, 5))
+            .map(statIterator)
+            .get(),
+          lmg: cdata(statsSelector(weaponStatNthChild, 6))
+            .map(statIterator)
+            .get(),
+        };
 
         // Collect Favorite Loadouts
         const favoriteLoadouts = cdata(favoriteLoadoutsSelector(nthChild))
@@ -278,8 +324,7 @@ class GatsRequests {
             return { stat, value, imageUrl };
           })
           .get();
-
-        return { url, name, stats, favoriteLoadouts, vip };
+        return { url, name, clan, stats, weaponStats, favoriteLoadouts, vip };
       })
       .catch((err) => {
         console.log("_requestStatsData Err: ", url, err);

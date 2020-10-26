@@ -7,19 +7,26 @@ const {
   sendChannel,
   zeroWidthSpaceChar: z,
 } = require("../util/WaffleUtil");
-const { gatsUrl, gatsLogoUrl } = require("./GatsConstants");
+const { gatsUrl, gatsLogoUrl, statsUrl } = require("./GatsConstants");
 
 class GatsScraper {
   static init(discordClient) {
     this.discordClient = discordClient;
-    this.url = `https://stats.gats.io/`;
     this.playerStatsUrl = (stat, pageNum) =>
-      `${this.url}stat/${stat}?page=${pageNum}`;
+      `${statsUrl}stat/${stat}?page=${pageNum}`;
     this.clanStatsUrl = (stat, pageNum) =>
-      `${this.url}clans/top/${stat}?page=${pageNum}`;
+      `${statsUrl}clans/top/${stat}?page=${pageNum}`;
     this.TopStatType = {
       PLAYER: 1,
       CLAN: 2,
+    };
+    this.WeaponStatType = {
+      PISTOL: "pistol",
+      SMG: "smg",
+      SHOTGUN: "shotgun",
+      ASSAULT: "assault",
+      SNIPER: "sniper",
+      LMG: "lmg",
     };
 
     // High-level breakdown
@@ -32,7 +39,56 @@ class GatsScraper {
       .addCmdsForCategory("Gats", "changelog", (args) => this.changeLog(args))
       .addCmdsForCategory("Gats", "top5", () => this.getTopFive());
 
-    // Mid-level breakdown
+    // Mid-level breakdown #1
+    this.weaponArg = new ArgumentHandler()
+      .addCmds(
+        ["pistol", "piss", "pis", "p", "small gun", "annoying gun"],
+        this.WeaponStatType.PISTOL,
+        true
+      )
+      .addCmds(
+        ["sub machine gun", "sub-machine gun", "smg", "gun for noobs"],
+        this.WeaponStatType.SMG,
+        true
+      )
+      .addCmds(
+        ["shot gun", "shotty", "shot", "sg", "cheater gun"],
+        this.WeaponStatType.SHOTGUN,
+        true
+      )
+      .addCmds(
+        [
+          "assault rifle",
+          "assault",
+          "rifle",
+          "ass",
+          "a",
+          "the gun literally nobody uses",
+        ],
+        this.WeaponStatType.ASSAULT,
+        true
+      )
+      .addCmds(
+        ["sniper", "snip", "s", "dorf's weapon of choice", "meadow gun"],
+        this.WeaponStatType.SNIPER,
+        true
+      )
+      .addCmds(
+        [
+          "light machine gun",
+          "light-machine gun",
+          "lmg",
+          "l",
+          "big boy",
+          "big boi",
+          "big boi gun",
+          "big boy gun",
+        ],
+        this.WeaponStatType.LMG,
+        true
+      );
+
+    // Mid-level breakdown #2
     this.clanOrPlayerArg = new ArgumentHandler()
       .addCmds(["player", "players"], this.TopStatType.PLAYER)
       .addCmds(["clan", "clans"], this.TopStatType.CLAN);
@@ -307,7 +363,9 @@ class GatsScraper {
       if (!topStatArg.exists) {
         // Grab optional page number '3', '7'
         const pageNum = getNumberFromArguments(args) || 1;
-        return this._topPlayerStats(this.playerStatsUrl("highestscore", pageNum));
+        return this._topPlayerStats(
+          this.playerStatsUrl("highestscore", pageNum)
+        );
       }
       const argsWithoutTopStat = ArgumentHandler.removeArgs(
         args,
@@ -327,7 +385,9 @@ class GatsScraper {
       // Grab optional page number '3', '7'
       const pageNum = getNumberFromArguments(argsAfterClanOrPlayer) || 1;
       if (clanOrPlayerArg.value === this.TopStatType.PLAYER) {
-        return this._topPlayerStats(this.playerStatsUrl("highestscore", pageNum));
+        return this._topPlayerStats(
+          this.playerStatsUrl("highestscore", pageNum)
+        );
       }
       return this._topClanStats(this.clanStatsUrl("totalscore", pageNum));
     }
@@ -440,7 +500,12 @@ class GatsScraper {
         "⚠️ Please provide a player name argument. eg: **dorfnox**"
       );
     }
-    const playerName = args.split(/\s+/g)[0];
+    const argArray = args.split(/\s+/g);
+    const playerName = argArray[0];
+    const statArgument = this.weaponArg.parseArguments(
+      ArgumentHandler.removeArgs(args, 1)
+    );
+    const statToDisplay = statArgument.exists ? statArgument.value : "stats";
     return GatsRequests.requestPlayerStatsData(playerName)
       .then((allStats) => {
         if (!allStats || !allStats.stats || !allStats.stats[0]) {
@@ -448,11 +513,27 @@ class GatsScraper {
             description: `⚠️ No stats found for player **${playerName}**. Maybe you made a typo?`,
           };
         }
-        const { stats, favoriteLoadouts, vip } = allStats;
+        const { stats, weaponStats, favoriteLoadouts, vip, clan } = allStats;
+        const statData = statArgument.exists
+          ? weaponStats[statToDisplay]
+          : stats;
         const title = `Player Stats for ${allStats.name}`;
         const description = `${
           vip.isVip ? `:medal: *VIP member since ${vip.since}* :medal:\n\n` : ""
-        }`.concat(stats.map((s) => `**${s.stat}:** ${s.value}`).join("\n"));
+        }`
+          .concat(
+            !clan.name
+              ? `${z}\n`
+              : `**Member of Clan:** [${clan.name}](${clan.link})\n\n`
+          )
+          .concat(
+            statArgument.exists
+              ? `\`${
+                  statToDisplay.charAt(0).toUpperCase() + statToDisplay.slice(1)
+                } Stats\`\n`
+              : "`General Stats`\n"
+          )
+          .concat(statData.map((s) => `**${s.stat}:** ${s.value}`).join("\n"));
         const thumbnail = { url: favoriteLoadouts[0].imageUrl };
         const fields = [
           { name: z, value: "***Favorite Loadouts***" },
@@ -476,7 +557,12 @@ class GatsScraper {
     if (!args) {
       Promise.reject("⚠️ Please provide a clan name argument. eg: **KCGO**");
     }
-    const clanName = args.split(/\s+/g)[0];
+    const argArray = args.split(/\s+/g);
+    const clanName = argArray[0];
+    const statArgument = this.weaponArg.parseArguments(
+      ArgumentHandler.removeArgs(args, 1)
+    );
+    const statToDisplay = statArgument.exists ? statArgument.value : "stats";
     return GatsRequests.requestClanStatsData(clanName)
       .then((allStats) => {
         if (!allStats || !allStats.stats || !allStats.stats[0]) {
@@ -484,11 +570,18 @@ class GatsScraper {
             description: `⚠️ No stats found for clan **${clanName}**. Maybe you made a typo?`,
           };
         }
-        const { stats, favoriteLoadouts } = allStats;
+        const { stats, weaponStats, favoriteLoadouts } = allStats;
+        const statData = statArgument.exists
+          ? weaponStats[statToDisplay]
+          : stats;
         const title = `Clan Stats for ${allStats.name}`;
-        const description = stats
-          .map((s) => `**${s.stat}:** ${s.value}`)
-          .join("\n");
+        const description = `\`${
+          statArgument.exists
+            ? statToDisplay.charAt(0).toUpperCase() + statToDisplay.slice(1)
+            : "General"
+        } Stats\`\n`.concat(
+          statData.map((s) => `**${s.stat}:** ${s.value}`).join("\n")
+        );
         const thumbnail = { url: favoriteLoadouts[0].imageUrl };
         const fields = [
           { name: z, value: "***Favorite Loadouts***" },
