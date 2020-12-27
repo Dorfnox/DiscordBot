@@ -148,8 +148,8 @@ class GatsRequests {
       // Open site
       return Nightmare({ show: false, gotoTimeout: 15000, waitTimeout: 15000 })
         .goto(siteUrl)
-        .wait("#highScoresData > div:nth-child(5) > div.high-scores-text")
-        .evaluate(() => document.getElementById("highScoresData").innerHTML)
+        .wait("#hsd > div:nth-child(5) > div.high-scores-text")
+        .evaluate(() => document.getElementById("hsd").innerHTML)
         .end()
         .then((html) => {
           const cdata = cheerio.load(html, { normalizeWhitespace: true });
@@ -193,7 +193,7 @@ class GatsRequests {
           this.gatsCache.highScoresData.mutexLock = false;
         });
     }
-    // If cache update intrval has not been reached yet, or there is a mutex lock in place.
+    // If cache update interval has not been reached yet, or there is a mutex lock in place.
     return Promise.resolve(this.gatsCache.highScoresData.data);
   }
 
