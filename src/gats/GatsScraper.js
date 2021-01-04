@@ -102,7 +102,7 @@ class GatsScraper {
       )
       .addCmds(["kill", "kills", "killer", "killers"], (topStatType, pageNum) =>
         topStatType === this.TopStatType.PLAYER
-          ? this._topPlayerStats(this.playerStatsUrl("kills", pageNum))
+          ? this._topPlayerStats(this.playerStatsUrl("mostkills", pageNum))
           : this._topClanStats(this.clanStatsUrl("totalkills", pageNum))
       )
       .addCmds(
