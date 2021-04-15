@@ -123,6 +123,11 @@ class GenericResponse {
     return Promise.resolve({ description });
   }
 
+  static dababy() {
+    const description = "LESSS GOOOOOO";
+    return Promise.resolve({ description });
+  }
+
   static help(helpArg) {
     const parseArg = this.helpArgHandler.parseArguments(helpArg);
     let title, description;
@@ -165,7 +170,7 @@ class GenericResponse {
             description = "Kendron is a baby boi!";
             break;
           case this.howEnum.CONTACT:
-            description = `Contact is ${randomFromArray([8, 9, 10, 11, 12])}`;
+            description = `Contact is ${randomFromArray([10, 11, 12, 13, 14])}`;
             break;
           case this.howEnum.MEADOW:
             description = `Meadow is a boomer. Also, her real name is **${randomFromArray(
