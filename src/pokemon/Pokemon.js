@@ -211,7 +211,10 @@ class Pokemon {
           if (!resultsContainingPotentialName.length) {
             ctx.err = "Couldn't find concrete results";
             const description = `${ctx.err}. Try the following links:\n\n>>> `.concat(
-              searchResults.slice(0, 10).map((sr) => `[${sr.name}](${sr.url})`).join("\n\n")
+              searchResults
+                .slice(0, 10)
+                .map((sr) => `[${sr.name}](${sr.url})`)
+                .join("\n\n")
             );
             return sendChannel(channel, { title, description }, ctx);
           }

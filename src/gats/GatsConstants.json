@@ -1,7 +1,7 @@
 {
-    "gatsUrl": "https://gats.io/",
-    "statsUrl": "https://stats.gats.io/",
-    "gatsLogoUrl": "https://stats.gats.io/img/gats_logo.png",
-    "gatsChangeLogURL": "https://stats.gats.io/changelog",
-    "vipLogoUrl": "https://gats.io/img/vip.png"
+  "gatsUrl": "https://gats.io/",
+  "statsUrl": "https://stats.gats.io/",
+  "gatsLogoUrl": "https://stats.gats.io/img/gats_logo.png",
+  "gatsChangeLogURL": "https://stats.gats.io/changelog",
+  "vipLogoUrl": "https://gats.io/img/vip.png"
 }

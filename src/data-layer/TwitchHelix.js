@@ -7,8 +7,8 @@ const { address: publicIPAddress, port } = publicIP;
 
 class TwitchHelix {
   static appAccess = {
-    accessToken: null,
-    expiresAt: null, // Time in seconds
+    accessToken: "poggers",
+    expiresAt: 5000, // Time in seconds
     headers: {
       "Client-ID": clientId,
       Authorization: null,
