@@ -193,7 +193,7 @@ class ServerMailController {
           .then(() => resolve(sharedGuild))
           .catch((e) => {
             console.log(e);
-            reject('Could not send message to DM channel');
+            reject("Could not send message to DM channel");
           });
       });
 

@@ -5,7 +5,7 @@ const {
   mongoDatabaseName,
   mongoDBUsername,
   mongoDBPassword,
-  mongoDBClusterNetAddress
+  mongoDBClusterNetAddress,
 } = require("../../configWaffleBot.json").mongoDB;
 
 // Wrapper class for performing operations on MongoDB
@@ -19,8 +19,8 @@ class WaffleMongo {
     if (client) {
       return Promise.resolve(client);
     }
-    const mongDBUrl = `mongodb+srv://${mongoDBUsername}:${mongoDBPassword}@${mongoDBClusterNetAddress}/test?retryWrites=true&w=majority`;
-    return MongoClient.connect(mongDBUrl, { useUnifiedTopology: true })
+    const mongoDBUrl = `mongodb+srv://${mongoDBUsername}:${mongoDBPassword}@${mongoDBClusterNetAddress}/${mongoDatabaseName}?retryWrites=true&w=majority`;
+    return MongoClient.connect(mongoDBUrl, { useUnifiedTopology: true })
       .then((mongoClient) => WaffleMongo._setClient(mongoClient))
       .catch((err) => {
         console.log("Error connecting to MongoDB: ", err);
@@ -81,7 +81,7 @@ class WaffleMongo {
     if (collection) {
       return collection.findOne(findArgs, fieldsToReturn).catch((err) => {
         console.log("Error performing find: ", err);
-        throw '⚠️ Unable to find record';
+        throw "⚠️ Unable to find record";
       });
     }
     return Promise.reject("No collection");
