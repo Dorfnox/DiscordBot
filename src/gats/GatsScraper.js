@@ -8,6 +8,7 @@ const {
   zeroWidthSpaceChar: z,
 } = require("../util/WaffleUtil");
 const { gatsUrl, gatsLogoUrl, statsUrl } = require("./GatsConstants");
+const { json } = require("express");
 
 class GatsScraper {
   static init(discordClient) {
@@ -37,7 +38,8 @@ class GatsScraper {
       )
       .addCmdsForCategory("Gats", "top", (args) => this.top(args))
       .addCmdsForCategory("Gats", "changelog", (args) => this.changeLog(args))
-      .addCmdsForCategory("Gats", "top5", () => this.getTopFive());
+      .addCmdsForCategory("Gats", "top5", () => this.getTopFive())
+      .addCmdsForCategory("Gats", "gatsservers", () => this.getServers());
 
     // Mid-level breakdown #1
     this.weaponArg = new ArgumentHandler()
@@ -555,7 +557,7 @@ class GatsScraper {
 
   static clanstats(args) {
     if (!args) {
-      Promise.reject("⚠️ Please provide a clan name argument. eg: **KCGO**");
+      Promise.reject("⚠️ Please provide a clan name argument. eg: **KCSS**");
     }
     const argArray = args.split(/\s+/g);
     const clanName = argArray[0];
@@ -614,7 +616,6 @@ class GatsScraper {
         const description = `${changes
           .map((c) => `> ${c}`)
           .join(`\n> ${z}\n`)}\n\n[View the changelog online](${url})`;
-
         // Thumbnail
         const thumbnail = { url: gatsLogoUrl };
         return { title, description, url, thumbnail };
@@ -622,6 +623,25 @@ class GatsScraper {
       .catch((err) => {
         console.log("changeLog Err:", err);
         throw "⚠️ Unable to request change log data at this time. Bug Dorfnox.";
+      });
+  }
+  /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ PLAYERS ONLINE ~~~~~~~~~~~~~~~~~~~ */
+
+  static getServers() {
+    return GatsRequests.requestGatsServers()
+      .then((serverData) => {
+        // Title
+        const title = `Gats Servers as of ${new Date().toTimeString()}`;
+
+        // Description
+        const description = `${serverData.map((c) => `> ${c}`).join(`\n\n`)}`;
+        // Thumbnail
+        const thumbnail = { url: gatsLogoUrl };
+        return Promise.resolve({ title, description, thumbnail });
+      })
+      .catch((err) => {
+        console.log("gatsServer Err:", err);
+        throw "⚠️ Unable to get server data, bug fish cuz Dorfnox is busy!";
       });
   }
 

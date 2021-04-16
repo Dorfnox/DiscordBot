@@ -36,6 +36,14 @@
           "appendHelpExamples": ["kcss", "WeLoveCake"]
         },
         {
+          "name": "GatsServers",
+          "description": "Look at the Gats Servers to see who's playing!",
+          "cmds": ["gatsservers", "gservers", "gs"],
+          "concatenatable": true,
+          "hideFromHelp": false,
+          "appendHelpExamples": []
+        },
+        {
           "name": "Playerstats",
           "description": "See the overall stats for a given player.",
           "cmds": ["player stats", "ps"],
@@ -110,6 +118,14 @@
           "cmds": ["feed"],
           "concatenatable": true,
           "hideFromHelp": false,
+          "appendHelpExamples": []
+        },
+        {
+          "name": "DaBaby",
+          "description": "It's DaBaby time.",
+          "cmds": ["dababy"],
+          "concatenatable": true,
+          "hideFromHelp": true,
           "appendHelpExamples": []
         },
         {

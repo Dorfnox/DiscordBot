@@ -1,7 +1,7 @@
 const Nightmare = require("nightmare");
 const axios = require("axios").default;
 const cheerio = require("cheerio");
-
+const fetch = require("node-fetch");
 const WaffleResponse = require("../message/WaffleResponse");
 const { getSafe } = require("../util/WaffleUtil");
 const {
@@ -133,6 +133,41 @@ class GatsRequests {
       });
   }
 
+  static requestGatsServers() {
+    return fetch("https://io-8.com/find_instances", {
+      headers: {
+        accept: "*/*",
+        "accept-language": "en-US,en;q=0.9",
+        "content-type": "application/json",
+        "sec-ch-ua":
+          '"Google Chrome";v="89", "Chromium";v="89", ";Not A Brand";v="99"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "cross-site",
+      },
+      referrer: "https://gats.io/",
+      referrerPolicy: "strict-origin-when-cross-origin",
+      body: '{"game":"gats.io"}',
+      method: "POST",
+      mode: "cors",
+    })
+      .then((res) => res.json())
+      .then((json) => {
+        let servers = json;
+        let serverData = servers.map(
+          (server) =>
+            server.city +
+            " " +
+            server.game_type +
+            ": " +
+            server.players +
+            " online"
+        );
+        return serverData;
+      });
+  }
+
   static requestTopFiveData() {
     const now = Date.now();
     const { lastRequest, siteUrl, mutexLock } = this.gatsCache.highScoresData;
@@ -165,7 +200,7 @@ class GatsRequests {
             })
             .get();
 
-          // Reequest player stats
+          // Request player stats
           const playerRequestArray = data.map((d) =>
             this.requestPlayerStatsData(d.player)
           );
@@ -223,7 +258,7 @@ class GatsRequests {
           `#pageContainer > div:nth-child(${nthChild}) > div:nth-child(2) > div > table > tbody > tr`;
 
         // Collect vip details
-        var vip = null;
+        let vip = null;
         if (isPlayer) {
           vip = getSafe(
             () => {
@@ -253,7 +288,7 @@ class GatsRequests {
         );
 
         // Collect clan name/link
-        var clan = null;
+        let clan = null;
         if (isPlayer) {
           clan = getSafe(
             () => {
