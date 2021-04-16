@@ -320,19 +320,3 @@ class GenericResponse {
 }
 
 module.exports = GenericResponse;
-
-// function getGithubOrgs(url) {
-//   fetch(url).then((response) => response.json());
-// }
-
-// getGithubOrgs(
-//   "https://api.github.com/users/deekshasharma/orgs"
-// ).then((jsonData) => console.log(jsonData));
-
-// function getGithubOrgs(url) {
-//   return fetch(url).then((response) => response.json());
-// }
-
-// getGithubOrgs("https://api.github.com/users/deekshasharma/orgs").then((res) =>
-//   console.log(res)
-// );
