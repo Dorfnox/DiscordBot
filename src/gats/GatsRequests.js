@@ -155,16 +155,7 @@ class GatsRequests {
       .then((res) => res.json())
       .then((json) => {
         let servers = json;
-        let serverData = servers.map(
-          (server) =>
-            server.city +
-            " " +
-            server.game_type +
-            ": " +
-            server.players +
-            " online"
-        );
-        return serverData;
+        return servers;
       });
   }
 

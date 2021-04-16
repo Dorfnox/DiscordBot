@@ -33,7 +33,7 @@
           "cmds": ["clan stats", "cs"],
           "concatenatable": true,
           "hideFromHelp": false,
-          "appendHelpExamples": ["kcss", "WeLoveCake"]
+          "appendHelpExamples": ["KCSS", "WeLoveCake"]
         },
         {
           "name": "GatsServers",
