@@ -629,13 +629,17 @@ class GatsScraper {
 
   static getServers() {
     return GatsRequests.requestGatsServers()
-      .then((serverData) => {
-        // Title
-        const title = `Gats Servers as of ${new Date().toTimeString()}`;
-
-        // Description
-        const description = `${serverData.map((c) => `> ${c}`).join(`\n\n`)}`;
-        // Thumbnail
+      .then((servers) => {
+        if (servers.length === 0 || servers === null || servers === undefined)
+          throw "I can't fetch the data for some reason, annoy fish cuz Dorf is busy!";
+        const title = "Players Online in Gats.io";
+        let serverData = servers.map(
+          (server) =>
+            `${server.city} ${server.game_type}: **${server.players}** players online`
+        );
+        const description = `${serverData
+          .map((info) => `\n${info}`)
+          .join(`\n`)}`;
         const thumbnail = { url: gatsLogoUrl };
         return Promise.resolve({ title, description, thumbnail });
       })
@@ -644,7 +648,6 @@ class GatsScraper {
         throw "⚠️ Unable to get server data, bug fish cuz Dorfnox is busy!";
       });
   }
-
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ TOP FIVE LEADERBOARD ~~~~~~~~~~~~~~~~~ */
 
   static getTopFive() {
