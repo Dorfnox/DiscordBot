@@ -19,6 +19,7 @@ class GenericResponse {
       .addCmdsForCategory("General", "How", (msg, args) => this.how(args))
       .addCmdsForCategory("General", "Invite", () => this.invite())
       .addCmdsForCategory("General", "Nani", () => this.nani())
+      .addCmdsForCategory("General", "DaBaby", () => this.dababy())
       .addCmdsForCategory("General", "Ping", (msg) => this.ping(msg))
       .addCmdsForCategory("General", "Salt", () => this.salt())
       .addCmdsForCategory("General", "Say", (msg, args) => this.say(msg, args))
@@ -124,8 +125,13 @@ class GenericResponse {
   }
 
   static dababy() {
-    const description = "LESSS GOOOOOO";
-    return Promise.resolve({ description });
+    const dababyArray = [
+      "LESSS GOOOOOOOO",
+      "I will turn you into a convertible",
+      "YEA YEA",
+      "https://tenor.com/view/dababy-concert-dababy-concert-dababy-meme-less-goo-gif-21137686",
+    ];
+    return Promise.resolve(randomFromArray(dababyArray));
   }
 
   static help(helpArg) {
@@ -314,3 +320,19 @@ class GenericResponse {
 }
 
 module.exports = GenericResponse;
+
+// function getGithubOrgs(url) {
+//   fetch(url).then((response) => response.json());
+// }
+
+// getGithubOrgs(
+//   "https://api.github.com/users/deekshasharma/orgs"
+// ).then((jsonData) => console.log(jsonData));
+
+// function getGithubOrgs(url) {
+//   return fetch(url).then((response) => response.json());
+// }
+
+// getGithubOrgs("https://api.github.com/users/deekshasharma/orgs").then((res) =>
+//   console.log(res)
+// );
