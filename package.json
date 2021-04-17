@@ -11,18 +11,18 @@
   "dependencies": {
     "@discordjs/opus": "^0.3.3",
     "axios": "^0.21.1",
-    "cheerio": "^1.0.0-rc.5",
-    "discord.js": "^12.5.1",
-    "electron": "^11.1.1",
+    "cheerio": "^1.0.0-rc.6",
+    "discord.js": "^12.5.3",
+    "electron": "^11.4.3",
     "express": "^4.17.1",
     "fetch": "^1.1.0",
-    "mongodb": "^3.6.3",
+    "mongodb": "^3.6.6",
     "nightmare": "^3.0.2",
     "node-cache": "^5.1.2",
     "node-gyp": "^7.1.2",
     "node-opus": "^0.3.3",
-    "yt-search": "^2.5.1",
-    "ytdl-core": "^4.2.1"
+    "yt-search": "^2.8.0",
+    "ytdl-core": "^4.5.0"
   },
   "devDependencies": {
     "prettier": "^2.2.1"
