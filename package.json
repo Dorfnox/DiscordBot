@@ -17,7 +17,7 @@
     "express": "^4.17.1",
     "fetch": "^1.1.0",
     "mongodb": "^3.6.6",
-    "nightmare": "^3.0.2",
+    "nightmare": "^2.8.0",
     "node-cache": "^5.1.2",
     "node-opus": "^0.3.3",
     "yt-search": "^2.8.0",
