@@ -37,6 +37,14 @@ class WaffleMusic {
   }
 
   static messageConsumer(msg, args) {
+    /* ~~~~~~~~~~~ Uninstalling music capabilities for now ~~~~~~~~~~~~ */
+    new WaffleResponse()
+      .setEmbeddedResponse({
+        description:
+          "This feature has temporarily been deprecated - the plan is to bring it back in the future. We appreciate your patience",
+      })
+      .reply(msg);
+    return;
     if (!this.ready) {
       return;
     }
@@ -282,20 +290,25 @@ class WaffleMusic {
     const { info, videoId, videoTitle, textChannel } = musicQueue.peek();
     const ytLink = `https://www.youtube.com/watch?v=${videoId}`;
 
-    const readableStream = ytdl.downloadFromInfo(info, {
+    // const readableStream = ytdl.downloadFromInfo(info, {
+    //   filter: "audioonly",
+    //   quality: "highestaudio",
+    //   highWaterMark: 1 << highWaterMarkBitShift,
+    // }); /* ~4mbs */
+    const readableStream = ytdl("https://www.youtube.com/watch?v=q6EoRBvdVPQ", {
       filter: "audioonly",
       quality: "highestaudio",
       highWaterMark: 1 << highWaterMarkBitShift,
-    }); /* ~4mbs */
+    });
 
     readableStream.on("error", (err) => {
       console.log("READABLE_STREAM_ERR: ", err);
     });
+
     // End is usually called before streaming actually finishes
     // readableStream.on("end", (e) => {
     //   console.log("READABLE_STREAM_END: ", e);
     // });
-
     try {
       connection
         .play(readableStream, { highWaterMark: 1 })
@@ -336,7 +349,7 @@ class WaffleMusic {
         })
         .on("close", (c) => {
           console.log("DISPATCHER_CLOSE: ", c);
-          this._playFinish(c);
+          this._playFinish(guildId);
         });
     } catch (err) {
       console.log("CONNECTION_PLAY_ERROR: ", err);
